@@ -45,7 +45,7 @@ defmodule ShortUUID do
   """
   @spec divmod(Integer.t, Integer.t) :: [Integer.t]
   defp divmod(dividend, divisor) do
-    [Integer.floor_div(dividend, divisor), Integer.mod(dividend, divisor)]
+    [div(dividend, divisor), rem(dividend, divisor)]
   end
 
   @doc """
@@ -56,12 +56,10 @@ defmodule ShortUUID do
 
   defp int_to_string(number, acc) when number > 0 do
     [result, remainder] = divmod(number, @alphabet_length)
-    int_to_string(result, acc ++ [String.at(@alphabet, remainder)])
+    int_to_string(result, [acc | String.at(@alphabet, remainder)])
   end
 
-  defp int_to_string(_number, acc) do
-    List.to_string(acc)
-  end
+  defp int_to_string(0, acc), do: acc |> to_string
 
   @doc """
   Encode a UUID using the chosen alphabet.
@@ -76,7 +74,7 @@ defmodule ShortUUID do
   @spec encode(String.t) :: String.t
   def encode(uuid) do
     uuid
-     |> String.replace("-", "")
+     |> String.replace(~r/[-{}]/, "")
      |> String.downcase
      |> String.to_integer(16)
      |> int_to_string
@@ -116,7 +114,7 @@ defmodule ShortUUID do
   end
 
   defp add_padding(string) do
-    String.pad_leading(string, 32, "0")
+    string |> String.pad_leading(32, "0")
   end
 
   defp format_string_to_uuid(string) do
