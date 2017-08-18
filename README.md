@@ -2,7 +2,7 @@
 
 ShortUUID is a simple UUID shortener library for Elixir inspired by [shortuuid](https://github.com/skorokithakis/shortuuid).
 When used with the same alphabet it should be compatible with the python versions encoder/decoder.
-This library does not however support generating UUIDs, some of the libraries that can be used for that purpose are
+This library does not however support generating UUIDs, some libraries that can be used for that purpose are
 [Elixir UUID](https://github.com/zyro/elixir-uuid) and [Erlang UUID](https://github.com/okeuday/uuid) and also [Ecto](https://hexdocs.pm/ecto/Ecto.UUID.html).
 
 ## Installation
@@ -27,5 +27,5 @@ This library does not however support generating UUIDs, some of the libraries th
     When using a custom alphabet take care to avoid duplicate characters and be aware that order affects the encoding.
 
 
-The full documentation can found at [https://hexdocs.pm/shortuuid](https://hexdocs.pm/shortuuid).
 
+The full documentation can found at [https://hexdocs.pm/shortuuid](https://hexdocs.pm/shortuuid).
