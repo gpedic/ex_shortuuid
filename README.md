@@ -26,8 +26,6 @@ This library does not however support generating UUIDs, some of the libraries th
     
     When using a custom alphabet take care to avoid duplicate characters and be aware that order affects the encoding.
 
-The package can be installed by adding `shortuuid` to your list of dependencies in `mix.exs`:
 
-
-Full documentation can found at [https://hexdocs.pm/shortuuid](https://hexdocs.pm/shortuuid).
+The full documentation can found at [https://hexdocs.pm/shortuuid](https://hexdocs.pm/shortuuid).
 
