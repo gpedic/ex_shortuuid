@@ -10,7 +10,7 @@ This library does not however support generating UUIDs, some libraries that can 
   
     ```elixir
     def deps do
-      [{:shortuuid, "~> 0.1.1"}]
+      [{:shortuuid, "~> 1.0.0"}]
     end
     ```
  
@@ -24,8 +24,7 @@ This library does not however support generating UUIDs, some libraries that can 
     The default alphabet (above) will translate UUIDs to base57 using lowercase and uppercase letters
     and digits while avoiding similar-looking characters such as l, 1, I, O and 0.
     
-    When using a custom alphabet take care to avoid duplicate characters and be aware that order affects the encoding.
 
+## Documentation
 
-
-The full documentation can found at [https://hexdocs.pm/shortuuid](https://hexdocs.pm/shortuuid).
+Look up the full documentation at [https://hexdocs.pm/shortuuid](https://hexdocs.pm/shortuuid).
