@@ -164,14 +164,14 @@ defmodule ShortUUID do
   end
 
   @spec int_to_string(Integer.t, list()) :: [String.t]
-  def int_to_string(number, acc \\ [])
+  defp int_to_string(number, acc \\ [])
 
-  def int_to_string(number, acc) when number > 0 do
+  defp int_to_string(number, acc) when number > 0 do
     [result, remainder] = divmod(number, @alphabet_length)
     int_to_string(result, [acc | String.at(@alphabet, remainder)])
   end
 
-  def int_to_string(0, acc), do: acc |> to_string
+  defp int_to_string(0, acc), do: acc |> to_string
 
   defp strip_uuid(uuid) do
     uuid
@@ -183,7 +183,7 @@ defmodule ShortUUID do
     Regex.match?(@only_alphabet, string)
   end
 
-  def string_to_int(string) do
+  defp string_to_int(string) do
     String.reverse(string)
     |> String.graphemes
     |> Enum.reduce(0, fn(char, acc) ->
