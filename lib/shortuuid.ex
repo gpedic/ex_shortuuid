@@ -15,6 +15,7 @@ defmodule ShortUUID do
         config :shortuuid,
           alphabet: "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 
+  Note that for this to take effect currently requires recompiling the dependency.
   The default alphabet (above) will translate UUIDs to base57 using lowercase and uppercase letters
   and digits while avoiding similar-looking characters such as l, 1, I, O and 0.
 
@@ -47,7 +48,7 @@ defmodule ShortUUID do
   If we didn't do the padding the nil UUID for example would simply encode into an empty string
   since it's int value is 0.
 
-  Supported UUID formats are:
+  Some supported UUID input formats are:
 
   * `2a162ee5-02f4-4701-9e87-72762cbce5e2`
   * `2a162ee502f447019e8772762cbce5e2`
