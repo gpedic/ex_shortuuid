@@ -10,7 +10,7 @@ This library does not however support generating UUIDs, some libraries that can 
   
     ```elixir
     def deps do
-      [{:shortuuid, "~> 1.0.0"}]
+      [{:shortuuid, "~> 1.0.1"}]
     end
     ```
  
