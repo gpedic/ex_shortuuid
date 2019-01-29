@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.com/gpedic/ex_shortuuid.svg?branch=master)](https://travis-ci.com/gpedic/ex_shortuuid)
+[![Coverage Status](https://coveralls.io/repos/github/gpedic/ex_shortuuid/badge.svg)](https://coveralls.io/github/gpedic/ex_shortuuid)
+
 # ShortUUID
 
 ShortUUID is a simple Elixir library that generates concise, unambiguous, URL-safe UUIDs.

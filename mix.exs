@@ -11,7 +11,7 @@ defmodule ShortUUID.Mixfile do
      version: @version,
      elixir: "~> 1.4",
      test_coverage: [tool: ExCoveralls],
-     preferred_cli_env: ["coveralls": :test],
+     preferred_cli_env: [coveralls: :test],
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
      package: package(),
@@ -55,7 +55,7 @@ defmodule ShortUUID.Mixfile do
       files: ["lib" , "mix.exs", "README*", "LICENSE*"],
       maintainers: ["Goran Pedić"],
       licenses: ["MIT"],
-      links: %{"GitHub" => "https://github.com/gpedic/ex_shortuuid"}
+      links: %{"GitHub" => @url}
     ]
   end
 end
