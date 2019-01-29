@@ -7,7 +7,7 @@ defmodule ShortUUID do
   Add ShortUUID to your list of dependencies in `mix.exs`:
 
       def deps do
-        [{:shortuuid, "~> #{ShortUUID.Mixfile.project[:version]}"}]
+        [{:shortuuid, "~> #{ShortUUID.Mixfile.project()[:version]}"}]
       end
 
 
@@ -53,12 +53,12 @@ defmodule ShortUUID do
 
   @alphabet "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
   @alphabet_tuple @alphabet
-    |> String.split("", trim: true)
-    |> List.to_tuple
+                  |> String.split("", trim: true)
+                  |> List.to_tuple()
   @char_to_int_map @alphabet
-    |> String.split("", trim: true)
-    |> Enum.with_index()
-    |> Enum.reduce(%{}, fn {char, idx}, acc -> Map.put_new(acc, char, idx) end)
+                   |> String.split("", trim: true)
+                   |> Enum.with_index()
+                   |> Enum.reduce(%{}, fn {char, idx}, acc -> Map.put_new(acc, char, idx) end)
 
   @alphabet_length 57
   @padding_length 22
@@ -74,18 +74,20 @@ defmodule ShortUUID do
       {:ok, "keATfB8JP2ggT7U9JZrpV9"}
 
   """
-  @spec encode(String.t) :: {:ok, String.t} | {:error, String.t}
+  @spec encode(String.t()) :: {:ok, String.t()} | {:error, String.t()}
   def encode(uuid) do
     stripped_uuid = strip_uuid(uuid)
 
-    case stripped_uuid |> String.length == 32 do
+    case stripped_uuid |> String.length() == 32 do
       true ->
-        encoded_uuid = stripped_uuid
-        |> String.to_integer(16)
-        |> int_to_string
-        |> pad_shortuuid
+        encoded_uuid =
+          stripped_uuid
+          |> String.to_integer(16)
+          |> int_to_string
+          |> pad_shortuuid
 
         {:ok, encoded_uuid}
+
       _anything_else ->
         {:error, "Invalid UUID"}
     end
@@ -102,10 +104,12 @@ defmodule ShortUUID do
       "keATfB8JP2ggT7U9JZrpV9"
 
   """
-  @spec encode!(String.t) :: String.t
+  @spec encode!(String.t()) :: String.t()
   def encode!(uuid) do
     case encode(uuid) do
-      {:ok, encoded_uuid} -> encoded_uuid
+      {:ok, encoded_uuid} ->
+        encoded_uuid
+
       {:error, msg} ->
         raise ArgumentError, message: msg
     end
@@ -120,7 +124,7 @@ defmodule ShortUUID do
       {:ok, "2a162ee5-02f4-4701-9e87-72762cbce5e2"}
 
   """
-  @spec decode(String.t) :: {:ok, String.t} | {:error, String.t}
+  @spec decode(String.t()) :: {:ok, String.t()} | {:error, String.t()}
   def decode(string) when is_binary(string) do
     case string |> matches_alphabet? do
       true ->
@@ -128,7 +132,9 @@ defmodule ShortUUID do
         |> int_to_hex_string
         |> pad_uuid
         |> format_uuid_string
-      false -> {:error, "Invalid input"}
+
+      false ->
+        {:error, "Invalid input"}
     end
   end
 
@@ -142,7 +148,7 @@ defmodule ShortUUID do
       iex> ShortUUID.decode!("keATfB8JP2ggT7U9JZrpV9")
       "2a162ee5-02f4-4701-9e87-72762cbce5e2"
   """
-  @spec decode!(String.t) :: String.t
+  @spec decode!(String.t()) :: String.t()
   def decode!(string) do
     case decode(string) do
       {:ok, uuid} -> uuid
@@ -153,15 +159,15 @@ defmodule ShortUUID do
   defp int_to_hex_string(number) do
     number
     |> to_hex_string
-    |> String.downcase
+    |> String.downcase()
   end
 
-  @spec divmod(Integer.t, Integer.t) :: [Integer.t]
+  @spec divmod(Integer.t(), Integer.t()) :: [Integer.t()]
   defp divmod(dividend, divisor) do
     [div(dividend, divisor), rem(dividend, divisor)]
   end
 
-  @spec int_to_string(Integer.t, list()) :: [String.t]
+  @spec int_to_string(Integer.t(), list()) :: [String.t()]
   defp int_to_string(number, acc \\ [])
 
   defp int_to_string(number, acc) when number > 0 do
@@ -173,7 +179,7 @@ defmodule ShortUUID do
 
   defp strip_uuid(uuid) do
     uuid
-    |> String.downcase
+    |> String.downcase()
     |> String.replace(~r/[^0-9a-f]/, "")
   end
 
@@ -185,7 +191,7 @@ defmodule ShortUUID do
     string
     |> String.split("", trim: true)
     |> Enum.reverse()
-    |> Enum.reduce(0, fn(char, acc) ->
+    |> Enum.reduce(0, fn char, acc ->
       %{^char => index} = @char_to_int_map
       acc * @alphabet_length + index
     end)
