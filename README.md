@@ -52,6 +52,12 @@ iex> "EwQd7sRtDbyyB6QRSWAtQn" |> ShortUUID.decode!
 "f98e80e7-9923-4173-8408-98f8254912ad"
 ```
 
+## Ecto
+
+If you would like to use ShortUUID with Ecto schemas try [Ecto.ShortUUID](https://hexdocs.pm/ecto_shortuuid/readme.html).
+
+It provides a custom Ecto type which allows for you to use ShortUUIDs as primary and foreign keys while keeping backwards compatibility with :binary_key type keys. This allows for a seamless transition from one type to the other.
+
 ## Documentation
 
 Look up the full documentation at [https://hexdocs.pm/shortuuid](https://hexdocs.pm/shortuuid).
