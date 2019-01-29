@@ -9,20 +9,23 @@ Often, one needs to use non-sequential IDs in places where users will see them, 
 
 Inspired by [shortuuid](https://github.com/skorokithakis/shortuuid).
 
-**Note:** As long as the they use the same alphabet(_23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz_) different shortuuid implementations should be compatible, however there is no official standard so I would strongly advise to do your own research and compatiblity testing if you're doing any sort of interop.
+**Note:** As long as the they use the same alphabet (_23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz_) different shortuuid implementations should be compatible, however there is no official standard afaik so I would strongly advise to do your own research and compatiblity testing if you're doing any sort of interop between different libraries.
 
-ShortUUID does not support generating UUIDs, libraries that can be used for that purpose are
+Unlike other shortuuid libraries this one does not generate UUIDs as this would break with the single task principle and also add potential uneeded dependencies. You can feed any valid UUID into `ShortUUID.encode/1`. Some of the libraries you can use to generate UUIDs are
 [Elixir UUID](https://github.com/zyro/elixir-uuid), [Erlang UUID](https://github.com/okeuday/uuid) and also [Ecto](https://hexdocs.pm/ecto/Ecto.UUID.html) as it can generate version 4 UUIDs.
 
 ShortUUID supports the most common formats of UUIDs:
 ```elixir
+  "2A162EE5-02F4-4701-9E87-72762CBCE5E2"
   "2a162ee5-02f4-4701-9e87-72762cbce5e2"
   "2a162ee502f447019e8772762cbce5e2"
   "{2a162ee5-02f4-4701-9e87-72762cbce5e2}"
   "{2a162ee502f447019e8772762cbce5e2}"
 ```
+The input string is also downcased before processing so the letter case doesn't matter.
 
 ## Installation
+
 Add ShortUUID to your list of dependencies in `mix.exs`:
 
 ```elixir
