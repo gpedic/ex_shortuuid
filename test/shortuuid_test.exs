@@ -40,6 +40,17 @@ defmodule ShortUUIDTest do
       # too long
       assert {:error, _} = ShortUUID.encode("FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFFF")
     end
+
+    test "unicode in string errors" do
+      assert {:error, "Invalid UUID"} = ShortUUID.encode("2á162ee502f447019e8772762cbce5e2")
+      assert {:error, "Invalid UUID"} = ShortUUID.encode("2Ä162ee502f447019e8772762cbce5e2")
+    end
+
+    test "encode! raises ArgumentError on invalid input" do
+      assert_raise ArgumentError, fn ->
+        ShortUUID.encode!("1234")
+      end
+    end
   end
 
   describe "#decoder" do
@@ -72,6 +83,11 @@ defmodule ShortUUIDTest do
     test "should still support legacy unpadded strings" do
       assert {:ok, @niluuid} = ShortUUID.decode("")
       assert {:ok, @niluuid} = ShortUUID.decode("222")
+    end
+
+    test "unicode in string errors" do
+      assert {:error, _} = ShortUUID.decode("2á8cwPMGnU6qLbRvo7qEZo2")
+      assert {:error, _} = ShortUUID.decode("2Ä8cwPMGnU6qLbRvo7qEZo2")
     end
   end
 

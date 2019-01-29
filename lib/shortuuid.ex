@@ -10,13 +10,8 @@ defmodule ShortUUID do
         [{:shortuuid, "~> #{ShortUUID.Mixfile.project[:version]}"}]
       end
 
-  Optionally configure the alphabet to be used for encoding in `config.exs`:
 
-        config :shortuuid,
-          alphabet: "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
-
-  Note that for this to take effect currently requires recompiling the dependency.
-  The default alphabet (above) will translate UUIDs to base57 using lowercase and uppercase letters
+  ShortUUID.encode/1 will translate UUIDs to base57 using lowercase and uppercase letters
   and digits while avoiding similar-looking characters such as l, 1, I, O and 0.
 
   ## Typical usage
@@ -27,12 +22,7 @@ defmodule ShortUUID do
 
   ## Notes
 
-  For compatibility with the python version we also pad values to the length it takes
-  to store a UUID in the chosen alphabet.
-
-  Any UUID will be padded to length 22 in case of the default base 57 alphabet.
-  The pad character is always the first character of the alphabet which represents zero.
-  In the default alphabet that character is 2 since it doesn't include 0 and 1.
+  The output is padded to a length of 22 characters, the padding character is "2", the first character of the alphabet.
 
       iex> ShortUUID.encode!("00000000-0000-0000-0000-000000000000")
       "2222222222222222222222"
@@ -53,6 +43,7 @@ defmodule ShortUUID do
   * `2a162ee5-02f4-4701-9e87-72762cbce5e2`
   * `2a162ee502f447019e8772762cbce5e2`
   * `{2a162ee5-02f4-4701-9e87-72762cbce5e2}`
+  * `{2a162ee502f447019e8772762cbce5e2}`
 
   Letter case is not relevant.
 
@@ -60,20 +51,22 @@ defmodule ShortUUID do
     This project was inspired by [skorokithakis/shortuuid](https://github.com/skorokithakis/shortuuid).
   """
 
-  @alphabet (Application.get_env(:shortuuid, :alphabet) ||
-    "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz")
-    |> String.graphemes |> Enum.sort |> Enum.dedup |> List.to_string
-  @alphabet_graphemes String.graphemes(@alphabet)
-  @alphabet_length String.length(@alphabet)
+  @alphabet "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+  @alphabet_tuple @alphabet
+    |> String.split("", trim: true)
+    |> List.to_tuple
+  @char_to_int_map @alphabet
+    |> String.split("", trim: true)
+    |> Enum.with_index()
+    |> Enum.reduce(%{}, fn {char, idx}, acc -> Map.put_new(acc, char, idx) end)
 
-  # Support default padding for python lib compatibility
-  # Calculate the necessary length to fit the entire UUID given the current alphabet.
-  @encode_padding_min_length round(Float.ceil(:math.log(:math.pow(2, 128)) / :math.log(@alphabet_length)))
+  @alphabet_length 57
+  @padding_length 22
+  @padding_char "2"
   @only_alphabet ~r/^[#{@alphabet}]*$/
 
-
   @doc """
-  Encode a UUID using the chosen alphabet.
+  Encode a UUID to ShortUUID.
 
   ## Examples
 
@@ -90,7 +83,7 @@ defmodule ShortUUID do
         encoded_uuid = stripped_uuid
         |> String.to_integer(16)
         |> int_to_string
-        |> add_encode_padding
+        |> pad_shortuuid
 
         {:ok, encoded_uuid}
       _anything_else ->
@@ -99,7 +92,7 @@ defmodule ShortUUID do
   end
 
   @doc """
-  Encode a UUID using the chosen alphabet.
+  Encode a UUID to ShortUUID.
 
   Similar to `encode/1` but raises an ArgumentError if it cannot process the UUID.
 
@@ -119,12 +112,12 @@ defmodule ShortUUID do
   end
 
   @doc """
-  Decode a shortened UUID.
+  Decode a ShortUUID.
 
   ## Examples
 
-      iex> ShortUUID.decode!("keATfB8JP2ggT7U9JZrpV9")
-      "2a162ee5-02f4-4701-9e87-72762cbce5e2"
+      iex> ShortUUID.decode("keATfB8JP2ggT7U9JZrpV9")
+      {:ok, "2a162ee5-02f4-4701-9e87-72762cbce5e2"}
 
   """
   @spec decode(String.t) :: {:ok, String.t} | {:error, String.t}
@@ -133,16 +126,21 @@ defmodule ShortUUID do
       true ->
         string_to_int(string)
         |> int_to_hex_string
-        |> add_decode_padding
+        |> pad_uuid
         |> format_uuid_string
-      false -> {:error, "Alphabet doesn't match string #{string}"}
+      false -> {:error, "Invalid input"}
     end
   end
 
   @doc """
-  Decode a shortened UUID.
+  Decode a ShortUUID.
 
   Similar to `decode/1` but raises an ArgumentError if the encoded UUID is invalid.
+
+  ## Examples
+
+      iex> ShortUUID.decode!("keATfB8JP2ggT7U9JZrpV9")
+      "2a162ee5-02f4-4701-9e87-72762cbce5e2"
   """
   @spec decode!(String.t) :: String.t
   def decode!(string) do
@@ -168,7 +166,7 @@ defmodule ShortUUID do
 
   defp int_to_string(number, acc) when number > 0 do
     [result, remainder] = divmod(number, @alphabet_length)
-    int_to_string(result, [acc | String.at(@alphabet, remainder)])
+    int_to_string(result, [acc | elem(@alphabet_tuple, remainder)])
   end
 
   defp int_to_string(0, acc), do: acc |> to_string
@@ -184,10 +182,12 @@ defmodule ShortUUID do
   end
 
   defp string_to_int(string) do
-    String.reverse(string)
-    |> String.graphemes
+    string
+    |> String.split("", trim: true)
+    |> Enum.reverse()
     |> Enum.reduce(0, fn(char, acc) ->
-      acc * @alphabet_length + Enum.find_index(@alphabet_graphemes, &(&1 == char))
+      %{^char => index} = @char_to_int_map
+      acc * @alphabet_length + index
     end)
   end
 
@@ -195,12 +195,12 @@ defmodule ShortUUID do
     number |> Integer.to_string(16)
   end
 
-  defp add_encode_padding(encoded_uuid) do
+  defp pad_shortuuid(encoded_uuid) do
     encoded_uuid
-    |> String.pad_trailing(@encode_padding_min_length, List.first(@alphabet_graphemes))
+    |> String.pad_trailing(@padding_length, @padding_char)
   end
 
-  defp add_decode_padding(string) do
+  defp pad_uuid(string) do
     string |> String.pad_leading(32, "0")
   end
 
@@ -208,5 +208,5 @@ defmodule ShortUUID do
     {:ok, <<u0::64, ?-, u1::32, ?-, u2::32, ?-, u3::32, ?-, u4::96>>}
   end
 
-  defp format_uuid_string(_invalid), do: {:error, "Decoded string is not a UUID"}
+  defp format_uuid_string(_invalid), do: {:error, "Invalid UUID"}
 end
