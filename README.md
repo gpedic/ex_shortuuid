@@ -9,9 +9,9 @@ Often, one needs to use non-sequential IDs in places where users will see them, 
 
 Inspired by [shortuuid](https://github.com/skorokithakis/shortuuid).
 
-**Note:** As long as the they use the same alphabet (_23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz_) different shortuuid implementations should be compatible, however there is no official standard afaik so I would strongly advise to do your own research and compatiblity testing if you're doing any sort of interop between different libraries.
+**Note:** As long as the they use the same alphabet (_23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz_) different shortuuid implementations should be compatible, however there is no official standard afaik so I would strongly advise to do your own research and compatibility testing if you're doing any sort of interoperability between different libraries.
 
-Unlike other shortuuid libraries this one does not generate UUIDs as this would break with the single task principle and also add potential uneeded dependencies. You can feed any valid UUID into `ShortUUID.encode/1`. Some of the libraries you can use to generate UUIDs are
+Unlike other shortuuid libraries this one does not generate UUIDs as this would break with the single task principle and also add potential unneeded dependencies. You can feed any valid UUID into `ShortUUID.encode/1`. Some of the libraries you can use to generate UUIDs are
 [Elixir UUID](https://github.com/zyro/elixir-uuid), [Erlang UUID](https://github.com/okeuday/uuid) and also [Ecto](https://hexdocs.pm/ecto/Ecto.UUID.html) as it can generate version 4 UUIDs.
 
 ShortUUID supports the most common formats of UUIDs:
@@ -52,11 +52,11 @@ iex> "EwQd7sRtDbyyB6QRSWAtQn" |> ShortUUID.decode!
 "f98e80e7-9923-4173-8408-98f8254912ad"
 ```
 
-## Ecto
+## Using ShortUUID with Ecto
 
-If you would like to use ShortUUID with Ecto schemas try [Ecto.ShortUUID](https://hexdocs.pm/ecto_shortuuid/readme.html).
+If you would like to use ShortUUID with Ecto schemas try [Ecto.ShortUUID](https://github.com/gpedic/ecto_shortuuid).
 
-It provides a custom Ecto type which allows for you to use ShortUUIDs as primary and foreign keys while keeping backwards compatibility with :binary_key type keys. This allows for a seamless transition from one type to the other.
+It provides a custom Ecto type which allows for ShortUUID primary and foreign keys while staying compatible with `:binary_key` (`EctoUUID`).
 
 ## Documentation
 

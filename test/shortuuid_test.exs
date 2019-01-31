@@ -29,10 +29,18 @@ defmodule ShortUUIDTest do
 
     test "should encode uppercase UUIDs" do
       assert {:ok, "keATfB8JP2ggT7U9JZrpV9"} = ShortUUID.encode("2A162EE5-02F4-4701-9E87-72762CBCE5E2")
+      assert {:ok, "keATfB8JP2ggT7U9JZrpV9"} = ShortUUID.encode("{2A162EE5-02F4-4701-9E87-72762CBCE5E2}")
       assert {:ok, "keATfB8JP2ggT7U9JZrpV9"} = ShortUUID.encode("2A162EE502F447019E8772762CBCE5E2")
+      assert {:ok, "keATfB8JP2ggT7U9JZrpV9"} = ShortUUID.encode("{2A162EE502F447019E8772762CBCE5E2}")
     end
 
     test "should not allow invalid UUIDs" do
+      assert {:error, _} = ShortUUID.encode("")
+      assert {:error, _} = ShortUUID.decode(0)
+      assert {:error, _} = ShortUUID.decode(1)
+      assert {:error, _} = ShortUUID.encode(nil)
+      assert {:error, _} = ShortUUID.decode(true)
+      assert {:error, _} = ShortUUID.decode(false)
       # has non hex value
       assert {:error, _} = ShortUUID.encode("FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFG")
       # too short
@@ -88,6 +96,14 @@ defmodule ShortUUIDTest do
     test "unicode in string errors" do
       assert {:error, _} = ShortUUID.decode("2á8cwPMGnU6qLbRvo7qEZo2")
       assert {:error, _} = ShortUUID.decode("2Ä8cwPMGnU6qLbRvo7qEZo2")
+    end
+
+    test "these should all error" do
+      assert {:error, _} = ShortUUID.decode(nil)
+      assert {:error, _} = ShortUUID.decode(0)
+      assert {:error, _} = ShortUUID.decode(1)
+      assert {:error, _} = ShortUUID.decode(true)
+      assert {:error, _} = ShortUUID.decode(false)
     end
   end
 
