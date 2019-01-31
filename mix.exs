@@ -44,7 +44,7 @@ defmodule ShortUUID.Mixfile do
 
   defp description do
     """
-    ShortUUID is a simple UUID shortener library.
+    ShortUUID - generate concise, unambiguous, URL-safe UUIDs
     """
   end
 
