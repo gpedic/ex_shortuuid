@@ -48,6 +48,11 @@ defmodule ShortUUID do
 
   Letter case is not relevant.
 
+  Also supported since `v2.1.0` is the encoding of binary UUIDs
+
+      iex> ShortUUID.encode!(<<0xFA, 0x62, 0xAF, 0x80, 0xA8, 0x61, 0x45, 0x6C, 0xAB, 0x77, 0xD5, 0x67, 0x7E, 0x2E, 0x8B, 0xA8>>)
+      "PuQURs6h2XSBBVNgqSHJZn"
+
   ## Using ShortUUID with Ecto
 
   If you would like to use ShortUUIDs with Ecto check out [ecto_shortuuid](https://github.com/gpedic/ecto_shortuuid).
@@ -79,7 +84,7 @@ defmodule ShortUUID do
       {:ok, "keATfB8JP2ggT7U9JZrpV9"}
 
   """
-  @spec encode!(binary) :: {:ok, String.t()} | {:error, String.t()}
+  @spec encode(binary) :: {:ok, String.t()} | {:error, String.t()}
   def encode(<<uuid::128>>) do
     {:ok, uuid |> int_to_string |> pad_shortuuid}
   end
