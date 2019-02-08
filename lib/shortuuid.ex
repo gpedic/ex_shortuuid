@@ -79,7 +79,11 @@ defmodule ShortUUID do
       {:ok, "keATfB8JP2ggT7U9JZrpV9"}
 
   """
-  @spec encode(String.t()) :: {:ok, String.t()} | {:error, String.t()}
+  @spec encode!(binary) :: {:ok, String.t()} | {:error, String.t()}
+  def encode(<<uuid::128>>) do
+    {:ok, uuid |> int_to_string |> pad_shortuuid}
+  end
+
   def encode(uuid) when is_binary(uuid) do
     stripped_uuid = strip_uuid(uuid)
 
@@ -111,7 +115,7 @@ defmodule ShortUUID do
       "keATfB8JP2ggT7U9JZrpV9"
 
   """
-  @spec encode!(String.t()) :: String.t()
+  @spec encode!(binary) :: String.t()
   def encode!(uuid) do
     case encode(uuid) do
       {:ok, encoded_uuid} ->

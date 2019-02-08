@@ -59,6 +59,27 @@ defmodule ShortUUIDTest do
         ShortUUID.encode!("1234")
       end
     end
+
+    test "encode binary UUIDs" do
+      assert {:ok, "keATfB8JP2ggT7U9JZrpV9"} = ShortUUID.encode(<<0x2A, 0x16, 0x2E, 0xE5, 0x02, 0xF4, 0x47, 0x01, 0x9E, 0x87, 0x72, 0x76,
+      0x2C, 0xBC, 0xE5, 0xE2>>)
+
+      assert "keATfB8JP2ggT7U9JZrpV9" = ShortUUID.encode!(<<0x2A, 0x16, 0x2E, 0xE5, 0x02, 0xF4, 0x47, 0x01, 0x9E, 0x87, 0x72, 0x76,
+      0x2C, 0xBC, 0xE5, 0xE2>>)
+
+
+      # min
+      assert {:ok, "2222222222222222222222"} = ShortUUID.encode(<<0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0>>)
+
+      # max
+      assert {:ok, "5B8cwPMGnU6qLbRvo7qEZo"} = ShortUUID.encode(<<255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255>>)
+
+      # more than 128 bit
+      assert {:error, _} = ShortUUID.encode(<<1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0>>)
+
+      # less than 128 bit
+      assert {:error, _} = ShortUUID.encode(<<1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0>>)
+    end
   end
 
   describe "#decoder" do
