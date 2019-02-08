@@ -1,3 +1,7 @@
+**2.1.0**
+
+* support directly encoding binary UUID
+
 **2.0.1**
 
 * add error fallbacks for encode/decode for the case where input is not string
