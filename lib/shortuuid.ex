@@ -239,7 +239,7 @@ defmodule ShortUUID do
       iex> ShortUUID.decode!("keATfB8JP2ggT7U9JZrpV9")
       "2a162ee5-02f4-4701-9e87-72762cbce5e2"
   """
-  @spec decode!(String.t()) :: String.t() :: no_return
+  @spec decode!(String.t()) :: String.t() | no_return()
   def decode!(string) do
     case decode(string) do
       {:ok, uuid} -> uuid
