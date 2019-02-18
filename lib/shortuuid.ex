@@ -8,7 +8,7 @@ defmodule ShortUUID do
   Add ShortUUID to your list of dependencies in `mix.exs`:
 
       def deps do
-        [{:shortuuid, "~> #{ShortUUID.Mixfile.project()[:version] |> String.slice(0,3)}"}]
+        [{:shortuuid, "~> #{ShortUUID.Mixfile.project()[:version] |> String.slice(0, 3)}"}]
       end
 
 
@@ -65,15 +65,6 @@ defmodule ShortUUID do
   @alphabet_tuple @alphabet
                   |> String.split("", trim: true)
                   |> List.to_tuple()
-  @char_to_int_map @alphabet
-                   |> String.split("", trim: true)
-                   |> Enum.with_index()
-                   |> Enum.reduce(%{}, fn {char, idx}, acc -> Map.put_new(acc, char, idx) end)
-
-  @alphabet_length 57
-  @padding_length 22
-  @padding_char "2"
-  @only_alphabet ~r/^[#{@alphabet}]*$/
 
   @doc """
   Encode a UUID to ShortUUID.
@@ -84,26 +75,53 @@ defmodule ShortUUID do
       {:ok, "keATfB8JP2ggT7U9JZrpV9"}
 
   """
+  # def encode(<< b1::2,  b2::6,  b3::6,  b4::6,  b5::6,  b6::6,  b7::6,  b8::6,  b9::6, b10::6, b11::6, b12::6, b13::6,
+  #               b14::6, b15::6, b16::6, b17::6, b18::6, b19::6, b20::6, b21::6, b22::6>>) do
+  #   <<e(b1), e(b2), e(b3), e(b4), e(b5), e(b6), e(b7), e(b8), e(b9), e(b10), e(b11), e(b12), e(b13),
+  #     e(b14), e(b15), e(b16), e(b17), e(b18), e(b19), e(b20), e(b21), e(b22)>>
+  # catch
+  #   :error -> :error
+  # else
+  #   encoded -> {:ok, encoded}
+  # end
+
   @spec encode(binary) :: {:ok, String.t()} | {:error, String.t()}
   def encode(<<uuid::128>>) do
     {:ok, uuid |> int_to_string |> pad_shortuuid}
   end
 
+  def encode(
+        <<a1, a2, a3, a4, a5, a6, a7, a8, ?-, b1, b2, b3, b4, ?-, c1, c2, c3, c4, ?-, d1, d2, d3,
+          d4, ?-, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12>>
+      ) do
+    encode(
+      <<a1, a2, a3, a4, a5, a6, a7, a8, b1, b2, b3, b4, c1, c2, c3, c4, d1, d2, d3, d4, e1, e2,
+        e3, e4, e5, e6, e7, e8, e9, e10, e11, e12>>
+    )
+  end
+
+  def encode(
+        <<a1, a2, a3, a4, a5, a6, a7, a8, b1, b2, b3, b4, c1, c2, c3, c4, d1, d2, d3, d4, e1, e2,
+          e3, e4, e5, e6, e7, e8, e9, e10, e11, e12>>
+      ) do
+    try do
+      <<b(a1)::4, b(a2)::4, b(a3)::4, b(a4)::4, b(a5)::4, b(a6)::4, b(a7)::4, b(a8)::4, b(b1)::4,
+        b(b2)::4, b(b3)::4, b(b4)::4, b(c1)::4, b(c2)::4, b(c3)::4, b(c4)::4, b(d1)::4, b(d2)::4,
+        b(d3)::4, b(d4)::4, b(e1)::4, b(e2)::4, b(e3)::4, b(e4)::4, b(e5)::4, b(e6)::4, b(e7)::4,
+        b(e8)::4, b(e9)::4, b(e10)::4, b(e11)::4, b(e12)::4>>
+    catch
+      :error -> {:error, "Invalid UUID"}
+    else
+      binary -> encode(binary)
+    end
+  end
+
   def encode(uuid) when is_binary(uuid) do
     stripped_uuid = strip_uuid(uuid)
 
-    case stripped_uuid |> String.length() == 32 do
-      true ->
-        encoded_uuid =
-          stripped_uuid
-          |> String.to_integer(16)
-          |> int_to_string
-          |> pad_shortuuid
-
-        {:ok, encoded_uuid}
-
-      _anything_else ->
-        {:error, "Invalid UUID"}
+    case stripped_uuid |> byte_size() == 32 do
+      true -> encode(stripped_uuid)
+      _anything_else -> {:error, "Invalid UUID"}
     end
   end
 
@@ -120,7 +138,7 @@ defmodule ShortUUID do
       "keATfB8JP2ggT7U9JZrpV9"
 
   """
-  @spec encode!(binary) :: String.t()
+  @spec encode!(binary) :: String.t() | no_return()
   def encode!(uuid) do
     case encode(uuid) do
       {:ok, encoded_uuid} ->
@@ -129,6 +147,30 @@ defmodule ShortUUID do
       {:error, msg} ->
         raise ArgumentError, message: msg
     end
+  end
+
+  @spec int_to_string(non_neg_integer(), maybe_improper_list()) :: String.t()
+  defp int_to_string(number, acc \\ [])
+
+  defp int_to_string(number, acc) when number > 0 do
+    # int_to_string(div(number, 57), [acc | <<e(rem(number, 57))>>])
+    int_to_string(div(number, 57), [acc | elem(@alphabet_tuple, rem(number, 57))])
+  end
+
+  defp int_to_string(0, acc), do: acc |> to_string
+
+  @spec strip_uuid(binary) :: binary
+  defp strip_uuid(uuid) do
+    for <<c <- uuid>>, v(c), into: "", do: <<c>>
+  end
+
+  defp format_uuid(
+         <<a1, a2, a3, a4, a5, a6, a7, a8, b1, b2, b3, b4, c1, c2, c3, c4, d1, d2, d3, d4, e1, e2,
+           e3, e4, e5, e6, e7, e8, e9, e10, e11, e12>>
+       ) do
+    <<c(a1), c(a2), c(a3), c(a4), c(a5), c(a6), c(a7), c(a8), ?-, c(b1), c(b2), c(b3), c(b4), ?-,
+      c(c1), c(c2), c(c3), c(c4), ?-, c(d1), c(d2), c(d3), c(d4), ?-, c(e1), c(e2), c(e3), c(e4),
+      c(e5), c(e6), c(e7), c(e8), c(e9), c(e10), c(e11), c(e12)>>
   end
 
   @doc """
@@ -141,17 +183,48 @@ defmodule ShortUUID do
 
   """
   @spec decode(String.t()) :: {:ok, String.t()} | {:error, String.t()}
-  def decode(string) when is_binary(string) do
-    case string |> matches_alphabet? do
-      true ->
-        string_to_int(string)
-        |> int_to_hex_string
-        |> pad_uuid
-        |> format_uuid_string
+  def decode(
+        <<c1::8, c2::8, c3::8, c4::8, c5::8, c6::8, c7::8, c8::8, c9::8, c10::8, c11::8, c12::8,
+          c13::8, c14::8, c15::8, c16::8, c17::8, c18::8, c19::8, c20::8, c21::8, c22::8>>
+      ) do
+    [
+      d(c22),
+      d(c21),
+      d(c20),
+      d(c19),
+      d(c18),
+      d(c17),
+      d(c16),
+      d(c15),
+      d(c14),
+      d(c13),
+      d(c12),
+      d(c11),
+      d(c10),
+      d(c9),
+      d(c8),
+      d(c7),
+      d(c6),
+      d(c5),
+      d(c4),
+      d(c3),
+      d(c2),
+      d(c1)
+    ]
+    |> Enum.reduce(0, fn index, acc ->
+      acc * 57 + index
+    end)
+    |> Integer.to_string(16)
+    |> pad_uuid
+    |> format_uuid
+  catch
+    :error -> {:error, "Invalid input"}
+  else
+    decoded -> {:ok, decoded}
+  end
 
-      false ->
-        {:error, "Invalid input"}
-    end
+  def decode(input) when is_binary(input) and byte_size(input) < 22 do
+    pad_shortuuid(input) |> decode
   end
 
   def decode(_), do: {:error, "Invalid input"}
@@ -166,7 +239,7 @@ defmodule ShortUUID do
       iex> ShortUUID.decode!("keATfB8JP2ggT7U9JZrpV9")
       "2a162ee5-02f4-4701-9e87-72762cbce5e2"
   """
-  @spec decode!(String.t()) :: String.t()
+  @spec decode!(String.t()) :: String.t() :: no_return
   def decode!(string) do
     case decode(string) do
       {:ok, uuid} -> uuid
@@ -174,63 +247,150 @@ defmodule ShortUUID do
     end
   end
 
-  defp int_to_hex_string(number) do
-    number
-    |> to_hex_string
-    |> String.downcase()
-  end
+  @spec pad_shortuuid(binary()) :: binary()
+  defp pad_shortuuid(<<_::176>> = shortuuid), do: shortuuid
+  defp pad_shortuuid(shortuuid), do: pad_shortuuid(shortuuid <> <<50>>)
 
-  @spec divmod(Integer.t(), Integer.t()) :: [Integer.t()]
-  defp divmod(dividend, divisor) do
-    [div(dividend, divisor), rem(dividend, divisor)]
-  end
+  @spec pad_uuid(binary()) :: binary()
+  defp pad_uuid(<<_::binary-size(32)>> = uuid), do: uuid
+  defp pad_uuid(uuid), do: pad_uuid(<<48>> <> uuid)
 
-  @spec int_to_string(Integer.t(), list()) :: [String.t()]
-  defp int_to_string(number, acc \\ [])
+  @compile {:inline, b: 1}
 
-  defp int_to_string(number, acc) when number > 0 do
-    [result, remainder] = divmod(number, @alphabet_length)
-    int_to_string(result, [acc | elem(@alphabet_tuple, remainder)])
-  end
+  defp b(?0), do: 0
+  defp b(?1), do: 1
+  defp b(?2), do: 2
+  defp b(?3), do: 3
+  defp b(?4), do: 4
+  defp b(?5), do: 5
+  defp b(?6), do: 6
+  defp b(?7), do: 7
+  defp b(?8), do: 8
+  defp b(?9), do: 9
+  defp b(?A), do: 10
+  defp b(?B), do: 11
+  defp b(?C), do: 12
+  defp b(?D), do: 13
+  defp b(?E), do: 14
+  defp b(?F), do: 15
+  defp b(?a), do: 10
+  defp b(?b), do: 11
+  defp b(?c), do: 12
+  defp b(?d), do: 13
+  defp b(?e), do: 14
+  defp b(?f), do: 15
+  defp b(_), do: throw(:error)
 
-  defp int_to_string(0, acc), do: acc |> to_string
+  @compile {:inline, c: 1}
 
-  defp strip_uuid(uuid) do
-    uuid
-    |> String.downcase()
-    |> String.replace(~r/[^0-9a-f]/, "")
-  end
+  defp c(?0), do: ?0
+  defp c(?1), do: ?1
+  defp c(?2), do: ?2
+  defp c(?3), do: ?3
+  defp c(?4), do: ?4
+  defp c(?5), do: ?5
+  defp c(?6), do: ?6
+  defp c(?7), do: ?7
+  defp c(?8), do: ?8
+  defp c(?9), do: ?9
+  defp c(?A), do: ?a
+  defp c(?B), do: ?b
+  defp c(?C), do: ?c
+  defp c(?D), do: ?d
+  defp c(?E), do: ?e
+  defp c(?F), do: ?f
+  defp c(?a), do: ?a
+  defp c(?b), do: ?b
+  defp c(?c), do: ?c
+  defp c(?d), do: ?d
+  defp c(?e), do: ?e
+  defp c(?f), do: ?f
+  defp c(_), do: throw(:error)
 
-  defp matches_alphabet?(string) do
-    Regex.match?(@only_alphabet, string)
-  end
+  @compile {:inline, d: 1}
 
-  defp string_to_int(string) do
-    string
-    |> String.split("", trim: true)
-    |> Enum.reverse()
-    |> Enum.reduce(0, fn char, acc ->
-      %{^char => index} = @char_to_int_map
-      acc * @alphabet_length + index
-    end)
-  end
+  defp d(?2), do: 0
+  defp d(?3), do: 1
+  defp d(?4), do: 2
+  defp d(?5), do: 3
+  defp d(?6), do: 4
+  defp d(?7), do: 5
+  defp d(?8), do: 6
+  defp d(?9), do: 7
+  defp d(?A), do: 8
+  defp d(?B), do: 9
+  defp d(?C), do: 10
+  defp d(?D), do: 11
+  defp d(?E), do: 12
+  defp d(?F), do: 13
+  defp d(?G), do: 14
+  defp d(?H), do: 15
+  defp d(?J), do: 16
+  defp d(?K), do: 17
+  defp d(?L), do: 18
+  defp d(?M), do: 19
+  defp d(?N), do: 20
+  defp d(?P), do: 21
+  defp d(?Q), do: 22
+  defp d(?R), do: 23
+  defp d(?S), do: 24
+  defp d(?T), do: 25
+  defp d(?U), do: 26
+  defp d(?V), do: 27
+  defp d(?W), do: 28
+  defp d(?X), do: 29
+  defp d(?Y), do: 30
+  defp d(?Z), do: 31
+  defp d(?a), do: 32
+  defp d(?b), do: 33
+  defp d(?c), do: 34
+  defp d(?d), do: 35
+  defp d(?e), do: 36
+  defp d(?f), do: 37
+  defp d(?g), do: 38
+  defp d(?h), do: 39
+  defp d(?i), do: 40
+  defp d(?j), do: 41
+  defp d(?k), do: 42
+  defp d(?m), do: 43
+  defp d(?n), do: 44
+  defp d(?o), do: 45
+  defp d(?p), do: 46
+  defp d(?q), do: 47
+  defp d(?r), do: 48
+  defp d(?s), do: 49
+  defp d(?t), do: 50
+  defp d(?u), do: 51
+  defp d(?v), do: 52
+  defp d(?w), do: 53
+  defp d(?x), do: 54
+  defp d(?y), do: 55
+  defp d(?z), do: 56
+  defp d(_), do: throw(:error)
 
-  defp to_hex_string(number) do
-    number |> Integer.to_string(16)
-  end
+  @compile {:inline, v: 1}
 
-  defp pad_shortuuid(encoded_uuid) do
-    encoded_uuid
-    |> String.pad_trailing(@padding_length, @padding_char)
-  end
-
-  defp pad_uuid(string) do
-    string |> String.pad_leading(32, "0")
-  end
-
-  defp format_uuid_string(<<u0::64, u1::32, u2::32, u3::32, u4::96>>) do
-    {:ok, <<u0::64, ?-, u1::32, ?-, u2::32, ?-, u3::32, ?-, u4::96>>}
-  end
-
-  defp format_uuid_string(_invalid), do: {:error, "Invalid UUID"}
+  defp v(?0), do: true
+  defp v(?1), do: true
+  defp v(?2), do: true
+  defp v(?3), do: true
+  defp v(?4), do: true
+  defp v(?5), do: true
+  defp v(?6), do: true
+  defp v(?7), do: true
+  defp v(?8), do: true
+  defp v(?9), do: true
+  defp v(?A), do: true
+  defp v(?B), do: true
+  defp v(?C), do: true
+  defp v(?D), do: true
+  defp v(?E), do: true
+  defp v(?F), do: true
+  defp v(?a), do: true
+  defp v(?b), do: true
+  defp v(?c), do: true
+  defp v(?d), do: true
+  defp v(?e), do: true
+  defp v(?f), do: true
+  defp v(_), do: false
 end
