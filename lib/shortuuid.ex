@@ -75,16 +75,6 @@ defmodule ShortUUID do
       {:ok, "keATfB8JP2ggT7U9JZrpV9"}
 
   """
-  # def encode(<< b1::2,  b2::6,  b3::6,  b4::6,  b5::6,  b6::6,  b7::6,  b8::6,  b9::6, b10::6, b11::6, b12::6, b13::6,
-  #               b14::6, b15::6, b16::6, b17::6, b18::6, b19::6, b20::6, b21::6, b22::6>>) do
-  #   <<e(b1), e(b2), e(b3), e(b4), e(b5), e(b6), e(b7), e(b8), e(b9), e(b10), e(b11), e(b12), e(b13),
-  #     e(b14), e(b15), e(b16), e(b17), e(b18), e(b19), e(b20), e(b21), e(b22)>>
-  # catch
-  #   :error -> :error
-  # else
-  #   encoded -> {:ok, encoded}
-  # end
-
   @spec encode(binary) :: {:ok, String.t()} | {:error, String.t()}
   def encode(<<uuid::128>>) do
     {:ok, uuid |> int_to_string |> pad_shortuuid}
