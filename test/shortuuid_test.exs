@@ -129,6 +129,10 @@ defmodule ShortUUIDTest do
       end
     end
 
+    test "fails when decoded hex value is > 32 bytes" do
+      assert {:error, _} = ShortUUID.decode("vurAvy8qYnp94isZcMSEPp")
+    end
+
     test "fails when encoded value is > 128 bit" do
       assert {:error, _} = ShortUUID.decode("6B8cwPMGnU6qLbRvo7qEZo2")
     end

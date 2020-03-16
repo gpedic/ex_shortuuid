@@ -242,6 +242,7 @@ defmodule ShortUUID do
   defp pad_shortuuid(shortuuid), do: pad_shortuuid(shortuuid <> <<50>>)
 
   @spec pad_uuid(binary()) :: binary()
+  defp pad_uuid(uuid) when byte_size(uuid) > 32, do: throw(:error)
   defp pad_uuid(<<_::binary-size(32)>> = uuid), do: uuid
   defp pad_uuid(uuid), do: pad_uuid(<<48>> <> uuid)
 
