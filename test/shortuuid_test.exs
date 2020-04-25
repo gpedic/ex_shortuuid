@@ -130,7 +130,7 @@ defmodule ShortUUIDTest do
     end
 
     test "fails when encoded value is > 128 bit" do
-      assert {:error, _} = ShortUUID.decode("6B8cwPMGnU6qLbRvo7qEZo2")
+      assert {:error, _} = ShortUUID.decode("6B8cwPMGnU6qLbRvo7qEZo")
     end
 
     test "should still support legacy unpadded strings" do
@@ -152,5 +152,3 @@ defmodule ShortUUIDTest do
     end
   end
 end
-
-
