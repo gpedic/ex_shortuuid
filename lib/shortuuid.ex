@@ -143,7 +143,6 @@ defmodule ShortUUID do
   defp int_to_string(number, acc \\ [])
 
   defp int_to_string(number, acc) when number > 0 do
-    # int_to_string(div(number, 57), [acc | <<e(rem(number, 57))>>])
     int_to_string(div(number, 57), [acc | elem(@alphabet_tuple, rem(number, 57))])
   end
 
@@ -162,6 +161,8 @@ defmodule ShortUUID do
       c(c1), c(c2), c(c3), c(c4), ?-, c(d1), c(d2), c(d3), c(d4), ?-, c(e1), c(e2), c(e3), c(e4),
       c(e5), c(e6), c(e7), c(e8), c(e9), c(e10), c(e11), c(e12)>>
   end
+
+  defp format_uuid(_), do: throw(:error)
 
   @doc """
   Decode a ShortUUID.
@@ -205,7 +206,7 @@ defmodule ShortUUID do
       acc * 57 + index
     end)
     |> Integer.to_string(16)
-    |> pad_uuid
+    |> String.pad_leading(32, <<48>>)
     |> format_uuid
   catch
     :error -> {:error, "Invalid input"}
@@ -240,10 +241,6 @@ defmodule ShortUUID do
   @spec pad_shortuuid(binary()) :: binary()
   defp pad_shortuuid(<<_::176>> = shortuuid), do: shortuuid
   defp pad_shortuuid(shortuuid), do: pad_shortuuid(shortuuid <> <<50>>)
-
-  @spec pad_uuid(binary()) :: binary()
-  defp pad_uuid(<<_::binary-size(32)>> = uuid), do: uuid
-  defp pad_uuid(uuid), do: pad_uuid(<<48>> <> uuid)
 
   @compile {:inline, b: 1}
 
