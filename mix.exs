@@ -17,7 +17,6 @@ defmodule ShortUUID.Mixfile do
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
       package: package(),
-      description: description(),
       docs: docs(),
       deps: deps()
     ]
@@ -29,42 +28,39 @@ defmodule ShortUUID.Mixfile do
 
   defp deps do
     [
-      {:ex_doc, ">= 0.14.0", only: :dev, runtime: false},
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
       {:excoveralls, ">= 0.7.0", only: :test},
       {:benchee, "~> 0.14", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.0.0-rc.4", only: [:dev], runtime: false}
     ]
   end
 
-  defp aliases() do
+  defp aliases do
     [
       "bench.encode": ["run bench/encode.exs"],
       "bench.decode": ["run bench/decode.exs"]
     ]
   end
 
-  defp docs() do
+  defp docs do
     [
-      main: @name,
+      extras: [
+        "CHANGELOG.md": [],
+        "LICENSE.md": [title: "License"],
+        "README.md": [title: "Overview"]
+      ],
+      main: "readme",
       source_ref: "v#{@version}",
       source_url: @url,
-      extras: [
-        "README.md",
-        "CHANGELOG.md"
-      ]
+      formatters: ["html"]
     ]
-  end
-
-  defp description do
-    """
-    ShortUUID - generate concise, unambiguous, URL-safe UUIDs
-    """
   end
 
   defp package do
     # These are the default files included in the package
     [
       name: :shortuuid,
+      description: "ShortUUID - generate concise, unambiguous, URL-safe UUIDs",
       files: ["lib", "mix.exs", "README*", "LICENSE*"],
       maintainers: ["Goran Pedić"],
       licenses: ["MIT"],

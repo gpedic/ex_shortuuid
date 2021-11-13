@@ -1,16 +1,16 @@
 defmodule ShortUUID do
   @moduledoc """
-
-  ShortUUID - generate concise, unambiguous, URL-safe UUIDs
+  ShortUUID - generate concise, unambiguous, URL-safe UUIDs.
 
   ## Installation
 
   Add ShortUUID to your list of dependencies in `mix.exs`:
 
       def deps do
-        [{:shortuuid, "~> #{ShortUUID.Mixfile.project()[:version] |> String.slice(0, 3)}"}]
+        [
+          {:shortuuid, "~> #{ShortUUID.Mixfile.project()[:version] |> String.slice(0, 3)}"}
+        ]
       end
-
 
   `encode/1` will translate UUIDs to base57 using lowercase and uppercase letters
   and digits while avoiding similar-looking characters such as l, 1, I, O and 0.
@@ -29,17 +29,15 @@ defmodule ShortUUID do
       iex> ShortUUID.encode!("00000000-0000-0000-0000-000000000000")
       "2222222222222222222222"
 
-
       iex> ShortUUID.encode!("00000001-0001-0001-0001-000000000001")
       "UD6ibhr3V4YXvriP822222"
-
 
       iex> ShortUUID.decode!("UD6ibhr3V4YXvriP822222")
       "00000001-0001-0001-0001-000000000001"
 
-  The input format is quite flexible as any non base16 chars are stripped from the input
-  which is then downcased, however only the following formats are covered by tests thus
-  guaranteed to work.
+  The input format is quite flexible as any non base16 chars are stripped from
+  the input which is then downcased, however only the following formats are
+  covered by tests thus guaranteed to work.
 
   * `2a162ee5-02f4-4701-9e87-72762cbce5e2`
   * `2a162ee502f447019e8772762cbce5e2`
@@ -55,10 +53,13 @@ defmodule ShortUUID do
 
   ## Using ShortUUID with Ecto
 
-  If you would like to use ShortUUIDs with Ecto check out [ecto_shortuuid](https://github.com/gpedic/ecto_shortuuid).
+  If you would like to use ShortUUIDs with Ecto check out
+  [ecto_shortuuid](https://github.com/gpedic/ecto_shortuuid).
 
   ## Acknowledgments
-    This project was inspired by [skorokithakis/shortuuid](https://github.com/skorokithakis/shortuuid).
+
+    This project was inspired by
+    [skorokithakis/shortuuid](https://github.com/skorokithakis/shortuuid).
   """
 
   @alphabet "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
