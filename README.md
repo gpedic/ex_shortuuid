@@ -1,14 +1,18 @@
+# ShortUUID
+
 [![Build Status](https://travis-ci.com/gpedic/ex_shortuuid.svg?branch=master)](https://travis-ci.com/gpedic/ex_shortuuid)
 [![Coverage Status](https://coveralls.io/repos/github/gpedic/ex_shortuuid/badge.svg)](https://coveralls.io/github/gpedic/ex_shortuuid)
-[![Hex.pm](https://img.shields.io/hexpm/v/shortuuid.svg)](https://hex.pm/packages/shortuuid)
+[![Module Version](https://img.shields.io/hexpm/v/shortuuid.svg)](https://hex.pm/packages/shortuuid)
+[![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/shortuuid/)
+[![Total Download](https://img.shields.io/hexpm/dt/shortuuid.svg)](https://hex.pm/packages/shortuuid)
+[![License](https://img.shields.io/hexpm/l/shortuuid.svg)](https://github.com/gpedic/ex_shortuuid/blob/master/LICENSE.md)
+[![Last Updated](https://img.shields.io/github/last-commit/gpedic/shortuuid.svg)](https://github.com/gpedic/ex_shortuuid/commits/master)
 
-# ShortUUID
+<!-- MDOC !-->
 
 ShortUUID is a simple Elixir library that generates concise, unambiguous, URL-safe UUIDs.
 
 Often, one needs to use non-sequential IDs in places where users will see them, but the IDs must be as concise and easy to use as possible. ShortUUID solves this problem by translating regular UUIDs to base57 using lowercase and uppercase letters and digits, and removing similar-looking characters such as l, 1, I, O and 0.
-
-Inspired by [shortuuid](https://github.com/skorokithakis/shortuuid).
 
 **Note:** As long as the they use the same alphabet (_23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz_) different shortuuid implementations should be compatible, however there is no official standard afaik so I would strongly advise to do your own research and compatibility testing if you're doing any sort of interoperability between different libraries.
 
@@ -17,23 +21,23 @@ Unlike other shortuuid libraries this one does not generate UUIDs as this would 
 
 ShortUUID supports the most common formats of UUIDs:
 ```elixir
-  "2A162EE5-02F4-4701-9E87-72762CBCE5E2"
-  "2a162ee5-02f4-4701-9e87-72762cbce5e2"
-  "2a162ee502f447019e8772762cbce5e2"
-  "{2a162ee5-02f4-4701-9e87-72762cbce5e2}"
-  "{2a162ee502f447019e8772762cbce5e2}"
+"2A162EE5-02F4-4701-9E87-72762CBCE5E2"
+"2a162ee5-02f4-4701-9e87-72762cbce5e2"
+"2a162ee502f447019e8772762cbce5e2"
+"{2a162ee5-02f4-4701-9e87-72762cbce5e2}"
+"{2a162ee502f447019e8772762cbce5e2}"
 ```
 
 ## Installation
 
-Add ShortUUID to your list of dependencies in `mix.exs`:
+Add `:shortuuid` to your list of dependencies in `mix.exs`:
 
 ```elixir
-  def deps do
-    [
-      {:shortuuid, "~> 2.0"}
-    ]
-  end
+def deps do
+  [
+    {:shortuuid, "~> 2.0"}
+  ]
+end
 ```
 
 ## Examples
@@ -61,3 +65,14 @@ It provides a custom Ecto type which allows for ShortUUID primary and foreign ke
 ## Documentation
 
 Look up the full documentation at [https://hexdocs.pm/shortuuid](https://hexdocs.pm/shortuuid).
+
+## Acknowledgments
+
+Inspired by [shortuuid](https://github.com/skorokithakis/shortuuid).
+
+## Copyright and License
+
+Copyright (c) 2019 Goran Pedić
+
+This work is free. You can redistribute it and/or modify it under the
+terms of the MIT License. See the [LICENSE.md](./LICENSE.md) file for more details.
