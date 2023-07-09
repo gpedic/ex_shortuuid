@@ -1,6 +1,6 @@
 # ShortUUID
 
-[![Build Status](https://travis-ci.com/gpedic/ex_shortuuid.svg?branch=master)](https://travis-ci.com/gpedic/ex_shortuuid)
+[![Build Status](https://github.com/gpedic/ex_shortuuid/actions/workflows/ci.yml/badge.svg?branch=master)]
 [![Coverage Status](https://coveralls.io/repos/github/gpedic/ex_shortuuid/badge.svg)](https://coveralls.io/github/gpedic/ex_shortuuid)
 [![Module Version](https://img.shields.io/hexpm/v/shortuuid.svg)](https://hex.pm/packages/shortuuid)
 [![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/shortuuid/)
