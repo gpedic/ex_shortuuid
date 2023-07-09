@@ -1,0 +1,36 @@
+name: Elixir CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        elixir: ["1.8", "1.9", "1.10", "1.11", "1.12"]
+        otp: ["23.0", "24.0", "25.0", "26.0"]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Setup elixir
+      uses: actions/setup-elixir@v1
+      with:
+        elixir-version: ${{ matrix.elixir }}
+        otp-version: ${{ matrix.otp }}
+
+    - name: Install Dependencies
+      run: mix deps.get
+
+    - name: Run Tests
+      run: MIX_ENV=test mix coveralls.json
+
+    - name: Report to Coveralls
+      uses: coverallsapp/github-action@v2
+      with:
+        github-token: ${{ secrets.github-token }}
+        path-to-lcov: ./cover/excoveralls.json
