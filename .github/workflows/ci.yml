@@ -30,5 +30,8 @@ jobs:
     - name: Install Dependencies
       run: mix deps.get
 
+    - name: Run Credo
+      run: mix credo --strict
+
     - name: Run Tests
       run: MIX_ENV=test mix coveralls.github
