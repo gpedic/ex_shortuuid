@@ -10,23 +10,16 @@
 
 <!-- MDOC !-->
 
-ShortUUID is a simple Elixir library that generates concise, unambiguous, URL-safe UUIDs.
+hortUUID is a lightweight Elixir library that generates short and unique IDs for use in URLs. It provides a solution when you need IDs that are easy to use and understand for users.
 
-Often, one needs to use non-sequential IDs in places where users will see them, but the IDs must be as concise and easy to use as possible. ShortUUID solves this problem by translating regular UUIDs to base57 using lowercase and uppercase letters and digits, and removing similar-looking characters such as l, 1, I, O and 0.
+Instead of using long and complex UUIDs, ShortUUID converts them into shorter strings using a combination of lowercase and uppercase letters, as well as digits. It avoids using similar-looking characters such as 'l', '1', 'I', 'O', and '0'.
 
-**Note:** As long as the they use the same alphabet (_23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz_) different shortuuid implementations should be compatible, however there is no official standard afaik so I would strongly advise to do your own research and compatibility testing if you're doing any sort of interoperability between different libraries.
+**Note:** It's worth noting that different ShortUUID implementations should work together if they use the same set of characters. However, there is no official standard, so if you plan to use ShortUUID with other libraries, it's a good idea to research and test for compatibility.
 
-Unlike other shortuuid libraries this one does not generate UUIDs as this would break with the single task principle and also add potential unneeded dependencies. You can feed any valid UUID into `ShortUUID.encode/1`. Some of the libraries you can use to generate UUIDs are
+Unlike some other libraries, ShortUUID doesn't generate UUIDs itself. Instead, you can input any valid UUID into the `ShortUUID.encode/1`. To generate UUIDs, you can use libraries like
 [Elixir UUID](https://github.com/zyro/elixir-uuid), [Erlang UUID](https://github.com/okeuday/uuid) and also [Ecto](https://hexdocs.pm/ecto/Ecto.UUID.html) as it can generate version 4 UUIDs.
 
-ShortUUID supports the most common formats of UUIDs:
-```elixir
-"2A162EE5-02F4-4701-9E87-72762CBCE5E2"
-"2a162ee5-02f4-4701-9e87-72762cbce5e2"
-"2a162ee502f447019e8772762cbce5e2"
-"{2a162ee5-02f4-4701-9e87-72762cbce5e2}"
-"{2a162ee502f447019e8772762cbce5e2}"
-```
+ShortUUID supports common UUID formats and is case-insensitive. It also supports binary UUIDs returned from DBs like PostgreSQL when the uuid type is used to store the UUID.
 
 ## Installation
 

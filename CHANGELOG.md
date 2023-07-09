@@ -51,3 +51,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * drop support for custom alphabets
 * use fixed alphabet _23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz_ as it seems to be by far the most widely used shortuuid alphabet
+
+## v3.0.0
+* drop support for decoding of unpadded ShortUUIDs
+* drop support for formats other than regular hyphenated and unhyphenated UUIDs, MS format and binary UUIDs like are stored in PostgreSQL uuid type
+* refactor code for better readability
+* improve decode performance

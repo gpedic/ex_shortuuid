@@ -2,7 +2,7 @@ defmodule ShortUUID.Mixfile do
   use Mix.Project
 
   @name "ShortUUID"
-  @version "2.1.2"
+  @version "3.0.0"
   @url "https://github.com/gpedic/ex_shortuuid"
 
   def project do
@@ -28,10 +28,13 @@ defmodule ShortUUID.Mixfile do
 
   defp deps do
     [
+      {:elixir_uuid, "~> 1.2", only: :test},
+      {:stream_data, "~> 0.5", only: :test},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
-      {:excoveralls, ">= 0.7.0", only: :test},
+      {:excoveralls, "~> 0.16.1", only: :test},
       {:benchee, "~> 0.14", only: [:dev, :test], runtime: false},
-      {:dialyxir, "~> 1.0.0-rc.4", only: [:dev], runtime: false}
+      {:dialyxir, "~> 1.3", only: [:dev], runtime: false},
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]
   end
 
