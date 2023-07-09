@@ -28,10 +28,7 @@ jobs:
       run: mix deps.get
 
     - name: Run Tests
-      run: MIX_ENV=test mix coveralls.json
+      run: MIX_ENV=test mix coveralls
 
     - name: Report to Coveralls
       uses: coverallsapp/github-action@v2
-      with:
-        github-token: ${{ secrets.github-token }}
-        path-to-lcov: ./cover/excoveralls.json
