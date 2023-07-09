@@ -21,6 +21,48 @@ Unlike some other libraries, ShortUUID doesn't generate UUIDs itself. Instead, y
 
 ShortUUID supports common UUID formats and is case-insensitive. It also supports binary UUIDs returned from DBs like PostgreSQL when the uuid type is used to store the UUID.
 
+## Compatibility
+
+Starting with version `v3.0.0`, this library will follow suit with changes in other language implementations and move the most significant bit of the encoded value to the start. This also means that padding will be applied to the end of the string, not the start
+This change will restore compatibility with other libraries like [shortuuid](https://github.com/skorokithakis/shortuuid) from v1.0.0 onwards and [short-uuid
+](https://github.com/oculus42/short-uuid).
+
+Before `v3.0.0`
+```elixir
+
+iex> "00000001-0001-0001-0001-000000000001" |> ShortUUID.encode
+{:ok, "UD6ibhr3V4YXvriP822222"}
+
+```
+
+After `v3.0.0`
+```elixir
+
+iex> "00000001-0001-0001-0001-000000000001" |> ShortUUID.encode
+{:ok, "222228PirvXY4V3rhbi6DU"}
+
+```
+
+To decode ShortUUID created with version < v3.0.0 use one of two methods
+
+```elixir
+iex> "UD6ibhr3V4YXvriP822222" |> String.reverse() |> ShortUUID.decode()
+{:ok, "00000001-0001-0001-0001-000000000001"}
+
+iex> "UD6ibhr3V4YXvriP822222" |> ShortUUID.decode(legacy: true)
+{:ok, "00000001-0001-0001-0001-000000000001"}
+
+```
+
+Decoding legacy ShortUUIDs without either reversing the string first or using the legacy option will not fail but produce an incorrect result
+
+```elixir
+iex> "UD6ibhr3V4YXvriP822222" |> ShortUUID.decode!() === "00000001-0001-0001-0001-000000000001"
+false
+iex> "UD6ibhr3V4YXvriP822222" |> ShortUUID.decode()
+{:ok, "933997ef-eb92-293f-b202-2a879fc84be9"}
+```
+
 ## Installation
 
 Add `:shortuuid` to your list of dependencies in `mix.exs`:
@@ -37,15 +79,15 @@ end
 
 ```elixir
 iex> "f98e80e7-9923-4173-8408-98f8254912ad" |> ShortUUID.encode
-{:ok, "EwQd7sRtDbyyB6QRSWAtQn"}
+{:ok, "nQtAWSRQ6ByybDtRs7dQwE"}
 
 iex> "f98e80e7-9923-4173-8408-98f8254912ad" |> ShortUUID.encode!
-"EwQd7sRtDbyyB6QRSWAtQn"
+"nQtAWSRQ6ByybDtRs7dQwE"
 
-iex> "EwQd7sRtDbyyB6QRSWAtQn" |> ShortUUID.decode
+iex> "nQtAWSRQ6ByybDtRs7dQwE" |> ShortUUID.decode
 {:ok, "f98e80e7-9923-4173-8408-98f8254912ad"}
 
-iex> "EwQd7sRtDbyyB6QRSWAtQn" |> ShortUUID.decode!
+iex> "nQtAWSRQ6ByybDtRs7dQwE" |> ShortUUID.decode!
 "f98e80e7-9923-4173-8408-98f8254912ad"
 ```
 
@@ -68,4 +110,6 @@ Inspired by [shortuuid](https://github.com/skorokithakis/shortuuid).
 Copyright (c) 2019 Goran Pedić
 
 This work is free. You can redistribute it and/or modify it under the
-terms of the MIT License. See the [LICENSE.md](./LICENSE.md) file for more details.
+terms of the MIT License. 
+
+See the [LICENSE.md](./LICENSE.md) file for more details.

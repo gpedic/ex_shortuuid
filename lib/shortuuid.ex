@@ -16,13 +16,12 @@ defmodule ShortUUID do
 
   The encode/1 function translates UUIDs to base57 using lowercase and uppercase letters, as well as digits,
   while ensuring that similar-looking characters such as 'l', '1', 'I', 'O', and '0' are avoided.
-
         iex> ShortUUID.encode("ed7ba470-8e54-465e-825c-99712043e01c")
-        {:ok, "zpZwXhCTZFcjzuEELvmSGk"}
+        {:ok, "kGSmvLEEuzjcFZTChXwZpz"}
 
   The decode/1 function will turn the ShortUUID back into a regular UUID
 
-        iex> ShortUUID.decode("zpZwXhCTZFcjzuEELvmSGk")
+        iex> ShortUUID.decode("kGSmvLEEuzjcFZTChXwZpz")
         {:ok, "ed7ba470-8e54-465e-825c-99712043e01c"}
 
 
@@ -46,7 +45,7 @@ defmodule ShortUUID do
   Since version v2.1.0, ShortUUID also supports the encoding of binary UUIDs.
 
       iex> ShortUUID.encode!(<<0xFA, 0x62, 0xAF, 0x80, 0xA8, 0x61, 0x45, 0x6C, 0xAB, 0x77, 0xD5, 0x67, 0x7E, 0x2E, 0x8B, 0xA8>>)
-      "PuQURs6h2XSBBVNgqSHJZn"
+      "nZJHSqgNVBBSX2h6sRUQuP"
 
   ## Using ShortUUID with Ecto
 
@@ -57,48 +56,47 @@ defmodule ShortUUID do
     This project was inspired by
     [skorokithakis/shortuuid](https://github.com/skorokithakis/shortuuid).
   """
-  use Bitwise, only_operators: true
+  import Bitwise
   @alphabet "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
-  @alphabet_tuple @alphabet |> String.split("", trim: true) |> List.to_tuple()
-  @alphabet_list String.graphemes(@alphabet) |> Enum.with_index()
+  @alphabet_tuple @alphabet |> String.graphemes() |> List.to_tuple()
+  @codepoint_index String.to_charlist(@alphabet) |> Enum.with_index()
 
   @doc """
   Encodes a UUID into a ShortUUID string.
   """
   @spec encode(binary) :: {:ok, String.t()} | {:error, String.t()}
+  def encode(uuid)
+
   def encode(
         <<a::binary-size(8), ?-, b::binary-size(4), ?-, c::binary-size(4), ?-, d::binary-size(4),
           ?-, e::binary-size(12)>>
       ) do
-    decode_uuid(
+    encode_uuid_string(
       <<a::binary-size(8), b::binary-size(4), c::binary-size(4), d::binary-size(4),
         e::binary-size(12)>>
     )
   end
 
   def encode(<<_::binary-size(32)>> = uuid) do
-    decode_uuid(uuid)
+    encode_uuid_string(uuid)
   end
 
   def encode(
         <<?{, a::binary-size(8), ?-, b::binary-size(4), ?-, c::binary-size(4), ?-,
           d::binary-size(4), ?-, e::binary-size(12), ?}>>
       ) do
-    decode_uuid(
+    encode_uuid_string(
       <<a::binary-size(8), b::binary-size(4), c::binary-size(4), d::binary-size(4),
         e::binary-size(12)>>
     )
   end
 
   def encode(<<?{, uuid::binary-size(32), ?}>>) do
-    decode_uuid(<<uuid::binary-size(32)>>)
+    encode_uuid_string(<<uuid::binary-size(32)>>)
   end
 
   def encode(<<int_value::128>> = uuid) when is_binary(uuid) do
-    uuid =
-      int_value
-      |> int_to_string()
-      |> pad_shortuuid()
+    uuid = int_to_string(int_value) |> pad_shortuuid()
 
     {:ok, uuid}
   end
@@ -124,24 +122,75 @@ defmodule ShortUUID do
   @doc """
   Decodes a ShortUUID string into a UUID.
   """
-  @spec decode(String.t()) :: {:ok, String.t()} | {:error, String.t()}
-  def decode(shortuuid)
-      when is_binary(shortuuid) and byte_size(shortuuid) == 22 do
-    with {:ok, int_value} <- shortuuid_string_to_int(shortuuid),
-         0 <- int_value >>> 128 do
-      uuid =
-        <<int_value::128>>
-        |> Base.encode16(case: :lower)
-        |> format_uuid()
+  @spec decode(String.t(), keyword()) :: {:ok, String.t()} | {:error, String.t()}
+  def decode(shortuuid, opts \\ [legacy: false])
 
-      {:ok, uuid}
-    else
+  def decode(
+        <<c1::8, c2::8, c3::8, c4::8, c5::8, c6::8, c7::8, c8::8, c9::8, c10::8, c11::8, c12::8,
+          c13::8, c14::8, c15::8, c16::8, c17::8, c18::8, c19::8, c20::8, c21::8, c22::8>>,
+        legacy: false
+      ) do
+    uuid_int_value =
+      [
+        c1,
+        c2,
+        c3,
+        c4,
+        c5,
+        c6,
+        c7,
+        c8,
+        c9,
+        c10,
+        c11,
+        c12,
+        c13,
+        c14,
+        c15,
+        c16,
+        c17,
+        c18,
+        c19,
+        c20,
+        c21,
+        c22
+      ]
+      |> Enum.reduce(0, fn char, acc ->
+        acc * 57 + char_to_index(char)
+      end)
+
+    # verify our int value is <= 128 bits
+    # shift it right 128 bits, the result must be 0
+    case uuid_int_value >>> 128 do
+      0 ->
+        uuid =
+          <<uuid_int_value::128>>
+          |> Base.encode16(case: :lower)
+          |> format_uuid()
+
+        {:ok, uuid}
+
       _ ->
         {:error, "Invalid input"}
     end
+  rescue
+    _ ->
+      {:error, "Invalid input"}
   end
 
-  def decode(_string) do
+  def decode(
+        <<c1::8, c2::8, c3::8, c4::8, c5::8, c6::8, c7::8, c8::8, c9::8, c10::8, c11::8, c12::8,
+          c13::8, c14::8, c15::8, c16::8, c17::8, c18::8, c19::8, c20::8, c21::8, c22::8>>,
+        legacy: true
+      ) do
+    decode(
+      <<c22, c21, c20, c19, c18, c17, c16, c15, c14, c13, c12, c11, c10, c9, c8, c7, c6, c5, c4,
+        c3, c2, c1>>,
+      legacy: false
+    )
+  end
+
+  def decode(_string, _opts) do
     {:error, "Invalid input"}
   end
 
@@ -150,9 +199,9 @@ defmodule ShortUUID do
 
   Raises an ArgumentError if the ShortUUID is invalid.
   """
-  @spec decode!(String.t()) :: String.t() | no_return()
-  def decode!(string) do
-    case decode(string) do
+  @spec decode!(String.t(), keyword()) :: String.t() | no_return()
+  def decode!(string, opts \\ [legacy: false]) do
+    case decode(string, opts) do
       {:ok, uuid} -> uuid
       {:error, message} -> raise ArgumentError, message: message
     end
@@ -164,11 +213,10 @@ defmodule ShortUUID do
 
   # - `format_uuid/1`: Formats a UUID into a standard string form.
   # - `int_to_string/2`: Converts a given integer to a string, according to the predefined alphabet.
-  # - `shortuuid_string_to_int/1`: Converts a short UUID string back into its integer form.
-  # - `pad_shortuuid/1`: Pads the given short UUID with the first character of the alphabet until its size reaches 22.
+  # - `pad_shortuuid/2`: Pads the given short UUID with the first character of the alphabet until its size reaches 22.
   # - `char_to_index/1`: Retrieves the index of a given character in the alphabet.
 
-  defp decode_uuid(uuid) do
+  defp encode_uuid_string(uuid) do
     uuid
     |> Base.decode16(case: :mixed)
     |> case do
@@ -189,46 +237,25 @@ defmodule ShortUUID do
   end
 
   # Converts a given integer to a string, according to the predefined alphabet.
-  # This function uses tail recursion for efficiency and reverses the resulting list at the end for correctness.
-  defp int_to_string(number, acc \\ "")
+  defp int_to_string(number, acc \\ [])
   defp int_to_string(0, acc), do: acc |> to_string
 
   defp int_to_string(number, acc) when number > 0 do
-    int_to_string(div(number, 57), acc <> elem(@alphabet_tuple, rem(number, 57)))
-  end
-
-  # Converts a short UUID string back into its integer form.
-  # This function uses the `Enum.reduce_while/3` function to halt the process when an invalid character is encountered.
-  defp shortuuid_string_to_int(shortuuid_string) do
-    shortuuid_string
-    |> :binary.bin_to_list()
-    |> :lists.reverse()
-    |> Enum.reduce_while(0, fn char, acc ->
-      case char_to_index(<<char::utf8>>) do
-        nil ->
-          {:halt, nil}
-
-        i ->
-          {:cont, acc * 57 + i}
-      end
-    end)
-    |> case do
-      nil -> {:error, :invalid_char}
-      value -> {:ok, value}
-    end
+    int_to_string(div(number, 57), [elem(@alphabet_tuple, rem(number, 57)) | acc])
   end
 
   # Pads the given short UUID with the first character of the alphabet until its size reaches 22, 176 bits.
-  # The padding operation uses a tail-recursive helper function for efficiency.
   defp pad_shortuuid(<<_::176>> = shortuuid), do: shortuuid
-  defp pad_shortuuid(shortuuid), do: pad_shortuuid(shortuuid <> <<50>>)
+
+  defp pad_shortuuid(shortuuid),
+    do: pad_shortuuid(<<50>> <> shortuuid)
 
   # Retrieves the index of a given character in the alphabet.
   # This function is generated for each character in the alphabet for quick access.
   @compile {:inline, char_to_index: 1}
-  for {char, i} <- @alphabet_list do
-    defp char_to_index(unquote(char)), do: unquote(i)
+  for {char, index} <- @codepoint_index do
+    defp char_to_index(unquote(char)), do: unquote(index)
   end
 
-  defp char_to_index(_), do: nil
+  defp char_to_index(_), do: raise(ArgumentError)
 end
