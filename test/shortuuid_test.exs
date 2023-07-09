@@ -209,8 +209,9 @@ defmodule ShortUUIDTest do
     end
   end
 
-  # Generates a V4 UUID with a 50% chance of removing hyphens, and randomly applies downcasing, upcasing, or capitalization.
-  def uuid_generator() do
+  # Generates a V4 UUID with a 50% chance of removing hyphens,
+  # randomly applies downcasing, upcasing, or capitalization.
+  def uuid_generator do
     StreamData.map(StreamData.constant(:ok), fn _ ->
       uuid = UUID.uuid4()
 
@@ -239,7 +240,7 @@ defmodule ShortUUIDTest do
     |> String.replace(~r/(.{8})(.{4})(.{4})(.{4})(.{12})/, "\\1-\\2-\\3-\\4-\\5")
   end
 
-  def random_binary_uuid() do
+  def random_binary_uuid do
     StreamData.binary(length: 16)
   end
 end
