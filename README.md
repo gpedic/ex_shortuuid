@@ -23,11 +23,11 @@ ShortUUID supports common UUID formats and is case-insensitive. It also supports
 
 ## Compatibility
 
-Starting with version v3.0.0, this library will follow suit with changes in other language implementations and move the most significant bit of the encoded value to the start. This also means that padding will be applied to the end of the string, not the start
+Starting with version `v3.0.0`, this library will follow suit with changes in other language implementations and move the most significant bit of the encoded value to the start. This also means that padding will be applied to the end of the string, not the start
 This change will restore compatibility with other libraries like [shortuuid](https://github.com/skorokithakis/shortuuid) from v1.0.0 onwards and [short-uuid
 ](https://github.com/oculus42/short-uuid).
 
-Before v3.0.0
+Before `v3.0.0`
 ```elixir
 
 iex> "00000001-0001-0001-0001-000000000001" |> ShortUUID.encode
@@ -35,7 +35,7 @@ iex> "00000001-0001-0001-0001-000000000001" |> ShortUUID.encode
 
 ```
 
-After v3.0.0
+After `v3.0.0`
 ```elixir
 
 iex> "00000001-0001-0001-0001-000000000001" |> ShortUUID.encode
@@ -110,4 +110,6 @@ Inspired by [shortuuid](https://github.com/skorokithakis/shortuuid).
 Copyright (c) 2019 Goran Pedić
 
 This work is free. You can redistribute it and/or modify it under the
-terms of the MIT License. See the [LICENSE.md](./LICENSE.md) file for more details.
+terms of the MIT License. 
+
+See the [LICENSE.md](./LICENSE.md) file for more details.
