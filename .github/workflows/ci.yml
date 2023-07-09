@@ -14,6 +14,9 @@ jobs:
       matrix:
         elixir: ["1.14", "1.15"]
         otp: ["24.3.4.9", "25.3.2.3"]
+    env:
+      MIX_ENV: test
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
     - uses: actions/checkout@v3
@@ -28,7 +31,4 @@ jobs:
       run: mix deps.get
 
     - name: Run Tests
-      run: MIX_ENV=test mix coveralls
-
-    - name: Report to Coveralls
-      uses: coverallsapp/github-action@v2
+      run: MIX_ENV=test mix coveralls.github
