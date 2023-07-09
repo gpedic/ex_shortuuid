@@ -253,8 +253,8 @@ defmodule ShortUUID do
   # Retrieves the index of a given character in the alphabet.
   # This function is generated for each character in the alphabet for quick access.
   @compile {:inline, char_to_index: 1}
-  for {char, i} <- @codepoint_index do
-    defp char_to_index(unquote(char)), do: unquote(i)
+  for {char, index} <- @codepoint_index do
+    defp char_to_index(unquote(char)), do: unquote(index)
   end
 
   defp char_to_index(_), do: raise(ArgumentError)
