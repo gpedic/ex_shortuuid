@@ -118,7 +118,7 @@ defmodule ShortUUIDTest do
     end
   end
 
-  describe "decode/1" do
+  describe "decode/2" do
     test "decodes a valid shortuuid" do
       assert {:ok, "2a162ee5-02f4-4701-9e87-72762cbce5e2"} =
                ShortUUID.decode("9VprZJ9U7Tgg2PJ8BfTAek")
@@ -176,9 +176,19 @@ defmodule ShortUUIDTest do
       assert {:error, _} = ShortUUID.decode(true)
       assert {:error, _} = ShortUUID.decode(false)
     end
+
+    test "decodes legacy shortuuid" do
+      assert {:ok, "2a162ee5-02f4-4701-9e87-72762cbce5e2"} =
+               ShortUUID.decode("keATfB8JP2ggT7U9JZrpV9", legacy: true)
+    end
   end
 
-  describe "decode!/1" do
+  describe "decode!/2" do
+    test "decodes legacy shortuuid" do
+      assert "2a162ee5-02f4-4701-9e87-72762cbce5e2" =
+               ShortUUID.decode!("keATfB8JP2ggT7U9JZrpV9", legacy: true)
+    end
+
     test "raises an ArgumentError for and invalid ShortUUID" do
       assert_raise ArgumentError, fn ->
         ShortUUID.decode!("invalid-shortuuid")
