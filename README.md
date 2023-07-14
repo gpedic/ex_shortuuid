@@ -68,7 +68,7 @@ Add `:shortuuid` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:shortuuid, "~> 2.0"}
+    {:shortuuid, "~> 3.0"}
   ]
 end
 ```
