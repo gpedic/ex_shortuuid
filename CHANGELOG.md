@@ -15,13 +15,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Benchmarks
 Results are not comparable to previous benchmarks due to them being run on a different system
+  ```
+  Operating System: macOS
+  CPU Information: Apple M2 Max
+  Number of Available Cores: 12
+  Available memory: 32 GB
+  Elixir 1.15.2
+  Erlang 25.3.2.3
 
-Operating System: macOS
-CPU Information: Apple M2 Max
-Number of Available Cores: 12
-Available memory: 32 GB
-Elixir 1.15.2
-Erlang 25.3.2.3
+  Benchmark suite executing with the following configuration:
+  warmup: 2 s
+  time: 5 s
+  memory time: 0 ns
+  parallel: 1
+  inputs: none specified
+  ```
 
 * v3.0.0
   ```
