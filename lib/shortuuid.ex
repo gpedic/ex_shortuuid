@@ -123,8 +123,6 @@ defmodule ShortUUID do
   Decodes a ShortUUID string into a UUID.
   """
   @spec decode(String.t()) :: {:ok, String.t()} | {:error, String.t()}
-  def decode(shortuuid)
-
   def decode(
         <<c1::8, c2::8, c3::8, c4::8, c5::8, c6::8, c7::8, c8::8, c9::8, c10::8, c11::8, c12::8,
           c13::8, c14::8, c15::8, c16::8, c17::8, c18::8, c19::8, c20::8, c21::8, c22::8>>
@@ -177,7 +175,7 @@ defmodule ShortUUID do
       {:error, "Invalid input"}
   end
 
-  def decode(_string, _opts) do
+  def decode(_string) do
     {:error, "Invalid input"}
   end
 
