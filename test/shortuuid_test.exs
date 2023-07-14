@@ -176,6 +176,11 @@ defmodule ShortUUIDTest do
       assert {:error, _} = ShortUUID.decode(true)
       assert {:error, _} = ShortUUID.decode(false)
     end
+
+    test "reversed legacy short UUID will produce correct result" do
+      assert {:ok, "00000001-0001-0001-0001-000000000001"} =
+               "UD6ibhr3V4YXvriP822222" |> String.reverse() |> ShortUUID.decode()
+    end
   end
 
   describe "decode!/1" do
