@@ -122,13 +122,10 @@ defmodule ShortUUID do
   @doc """
   Decodes a ShortUUID string into a UUID.
   """
-  @spec decode(String.t(), keyword()) :: {:ok, String.t()} | {:error, String.t()}
-  def decode(shortuuid, opts \\ [legacy: false])
-
+  @spec decode(String.t()) :: {:ok, String.t()} | {:error, String.t()}
   def decode(
         <<c1::8, c2::8, c3::8, c4::8, c5::8, c6::8, c7::8, c8::8, c9::8, c10::8, c11::8, c12::8,
-          c13::8, c14::8, c15::8, c16::8, c17::8, c18::8, c19::8, c20::8, c21::8, c22::8>>,
-        legacy: false
+          c13::8, c14::8, c15::8, c16::8, c17::8, c18::8, c19::8, c20::8, c21::8, c22::8>>
       ) do
     uuid_int_value =
       [
@@ -178,19 +175,7 @@ defmodule ShortUUID do
       {:error, "Invalid input"}
   end
 
-  def decode(
-        <<c1::8, c2::8, c3::8, c4::8, c5::8, c6::8, c7::8, c8::8, c9::8, c10::8, c11::8, c12::8,
-          c13::8, c14::8, c15::8, c16::8, c17::8, c18::8, c19::8, c20::8, c21::8, c22::8>>,
-        legacy: true
-      ) do
-    decode(
-      <<c22, c21, c20, c19, c18, c17, c16, c15, c14, c13, c12, c11, c10, c9, c8, c7, c6, c5, c4,
-        c3, c2, c1>>,
-      legacy: false
-    )
-  end
-
-  def decode(_string, _opts) do
+  def decode(_string) do
     {:error, "Invalid input"}
   end
 
@@ -199,9 +184,9 @@ defmodule ShortUUID do
 
   Raises an ArgumentError if the ShortUUID is invalid.
   """
-  @spec decode!(String.t(), keyword()) :: String.t() | no_return()
-  def decode!(string, opts \\ [legacy: false]) do
-    case decode(string, opts) do
+  @spec decode!(String.t()) :: String.t() | no_return()
+  def decode!(string) do
+    case decode(string) do
       {:ok, uuid} -> uuid
       {:error, message} -> raise ArgumentError, message: message
     end

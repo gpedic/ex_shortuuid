@@ -43,18 +43,16 @@ iex> "00000001-0001-0001-0001-000000000001" |> ShortUUID.encode
 
 ```
 
-To decode ShortUUID created with version < v3.0.0 use one of two methods
+To migrate ShortUUIDs created using `< v3.0.0` reverse them before passing to `decode`.
 
 ```elixir
-iex> "UD6ibhr3V4YXvriP822222" |> String.reverse() |> ShortUUID.decode()
-{:ok, "00000001-0001-0001-0001-000000000001"}
-
-iex> "UD6ibhr3V4YXvriP822222" |> ShortUUID.decode(legacy: true)
-{:ok, "00000001-0001-0001-0001-000000000001"}
-
+# UUID "00000001-0001-0001-0001-000000000001" encoded using v2.1.2 to "UD6ibhr3V4YXvriP822222"
+# reversing the encoded string before decode with v3.0.0 will produce the correct result
+iex> "UD6ibhr3V4YXvriP822222" |> String.reverse() |> ShortUUID.decode!()
+"00000001-0001-0001-0001-000000000001"
 ```
 
-Decoding legacy ShortUUIDs without either reversing the string first or using the legacy option will not fail but produce an incorrect result
+*Warning:* Decoding ShortUUIDs created using a version `< v3.0.0` without reversing the string first will not fail but produce an incorrect result
 
 ```elixir
 iex> "UD6ibhr3V4YXvriP822222" |> ShortUUID.decode!() === "00000001-0001-0001-0001-000000000001"
@@ -70,7 +68,7 @@ Add `:shortuuid` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:shortuuid, "~> 2.0"}
+    {:shortuuid, "~> 3.0"}
   ]
 end
 ```

@@ -5,8 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
 
-## v3.0.0
+## v3.0.0 (15.07.2023)
+
+Breaking change, ShortUUIDs created by `< v3.0.0` will produce bad results when decoded.
+The new output of `encode` is the reverse of the previous output.
+This follows a change in other languages ShortUUID libraries.
+
+To migrate ShortUUIDs created by `< v3.0.0` reverse them before passing to `decode`.
+
+```elixir
+# UUID "00000001-0001-0001-0001-000000000001" encoded using v2.1.2 to "UD6ibhr3V4YXvriP822222"
+# reversing the encoded string before decode with v3.0.0 will produce the correct result
+iex> "UD6ibhr3V4YXvriP822222" |> String.reverse() |> ShortUUID.decode!()
+"00000001-0001-0001-0001-000000000001"
+```
+
+### Changed
 * move most significant bit to the beginning of the encoded result similar to libraries in other languages (most importantly python shortuuid)
 * drop support for decoding of un-padded ShortUUIDs
 * drop support for formats other than regular hyphenated and unhyphenated UUIDs, MS format and binary UUIDs like are stored in PostgreSQL uuid type
@@ -15,13 +31,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Benchmarks
 Results are not comparable to previous benchmarks due to them being run on a different system
+  ```
+  Operating System: macOS
+  CPU Information: Apple M2 Max
+  Number of Available Cores: 12
+  Available memory: 32 GB
+  Elixir 1.15.2
+  Erlang 25.3.2.3
 
-Operating System: macOS
-CPU Information: Apple M2 Max
-Number of Available Cores: 12
-Available memory: 32 GB
-Elixir 1.15.2
-Erlang 25.3.2.3
+  Benchmark suite executing with the following configuration:
+  warmup: 2 s
+  time: 5 s
+  memory time: 0 ns
+  parallel: 1
+  inputs: none specified
+  ```
 
 * v3.0.0
   ```
