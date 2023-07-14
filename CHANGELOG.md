@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## v3.0.0 (14.07.2023)
+## v3.0.0 (15.07.2023)
 
 Breaking change, ShortUUIDs created by `< v3.0.0` will produce bad results when decoded.
 The new output of `encode` is the reverse of the previous output.
