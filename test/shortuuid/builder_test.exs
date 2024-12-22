@@ -38,7 +38,8 @@ defmodule ShortUUID.BuilderTest do
         :base32_z,
         :base58,
         :base62,
-        :base64
+        :base64,
+        :base64_url
       ]
 
       for alphabet <- predefined_alphabets do
@@ -99,6 +100,25 @@ defmodule ShortUUID.BuilderTest do
       {:ok, encoded} = module_name.encode(uuid)
       expected_length = ceil(:math.log(2 ** 128) / :math.log(String.length(test_alphabet)))
       assert String.length(encoded) == expected_length
+    end
+  end
+
+  @tag property: true
+  test "encode/decode works with randomly generated valid alphabets" do
+    check all(test_alphabet <- valid_alphabet_generator()) do
+      # Use elixir_uuid to generate a standard UUID
+      uuid = UUID.uuid4()
+
+      module_name = Module.concat(["ShortUUID", "BuilderTest", "Dyn#{System.unique_integer()}"])
+
+      Module.create(module_name, quote do
+        use ShortUUID.Builder, alphabet: unquote(test_alphabet)
+      end, Macro.Env.location(__ENV__))
+
+      {:ok, encoded} = module_name.encode(uuid)
+      {:ok, decoded} = module_name.decode(encoded)
+
+      assert decoded == uuid
     end
   end
 end

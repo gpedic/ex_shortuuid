@@ -23,21 +23,31 @@ defmodule ShortUUID.TestGenerators do
   end
 
   def valid_alphabet_generator do
-    # All possible characters we want to use
-    all_chars = ?0..?9 |> Enum.to_list() |>
-                Kernel.++(Enum.to_list(?A..?Z)) |>
-                Kernel.++(Enum.to_list(?a..?z)) |>
-                List.to_string() |>
-                String.graphemes()
+    # Creates a list of all alphanumeric characters
+    all_chars =
+      ?0..?9
+      |> Enum.to_list()
+      |> Kernel.++(Enum.to_list(?A..?Z))
+      |> Kernel.++(Enum.to_list(?a..?z))
+      |> List.to_string()
+      |> String.graphemes()
 
-    # Generate a list of 16-64 unique characters
-    StreamData.list_of(
-      StreamData.member_of(all_chars),
-      min_length: 16,
-      max_length: 64,
-      uniq: true
-    )
-    |> StreamData.map(&Enum.join/1)
+    # Add additional symbols that are supported
+    all_chars = all_chars ++ ["+", "-", "_", "/"]
+
+    # Shuffle them, and take a random length between
+    # 16 and 64 to ensure at least 16 unique characters.
+    # Use StreamData.bind to transform the random length
+    # into a generator that returns a random subset
+    # of characters joined into a string.
+    StreamData.bind(StreamData.integer(16..64), fn length ->
+      subset =
+        all_chars
+        |> Enum.shuffle()
+        |> Enum.take(length)
+
+      StreamData.constant(Enum.join(subset))
+    end)
   end
 
   def invalid_uuid_generator do
