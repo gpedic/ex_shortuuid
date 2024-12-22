@@ -12,7 +12,6 @@ defmodule ShortUUID.Core do
   def parse_uuid(<<?{, uuid::binary-size(36), ?}>>), do: parse_uuid(uuid)
   def parse_uuid(<<?{, uuid::binary-size(32), ?}>>), do: {:ok, uuid}
 
-  def parse_uuid(<<_int_value::128>> = uuid) when is_binary(uuid), do: {:ok, uuid}
   def parse_uuid(_), do: {:error, "Invalid UUID"}
 
   @doc false
@@ -36,10 +35,6 @@ defmodule ShortUUID.Core do
 
   def encode_binary(<<?{, uuid::binary-size(32), ?}>>, base, alphabet_tuple, encoded_length, padding) do
     encode_uuid_string(<<uuid::binary-size(32)>>, base, alphabet_tuple, encoded_length, padding)
-  end
-
-  def encode_binary(<<_int_value::128>> = uuid, base, alphabet_tuple, encoded_length, padding) when is_binary(uuid) do
-    encode_int(uuid, base, alphabet_tuple, encoded_length, padding)
   end
 
   def encode_binary(_, _, _, _, _), do: {:error, "Invalid UUID"}

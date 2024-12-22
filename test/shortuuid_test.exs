@@ -76,40 +76,28 @@ defmodule ShortUUIDTest do
       assert {:error, "Invalid UUID"} = ShortUUID.encode("2Ä162ee502f447019e8772762cbce5e2")
     end
 
-    test "encode binary UUIDs" do
-      assert {:ok, "nZJHSqgNVBBSX2h6sRUQuP"} =
-               ShortUUID.encode(
-                 <<250, 98, 175, 128, 168, 97, 69, 108, 171, 119, 213, 103, 126, 46, 139, 168>>
-               )
+    test "rejects binary input" do
+      # Remove accepting binary input tests and replace with rejection tests
+      assert {:error, "Invalid UUID"} =
+               ShortUUID.encode(<<250, 98, 175, 128, 168, 97, 69, 108, 171, 119, 213, 103, 126, 46, 139, 168>>)
 
-      assert {:ok, "9VprZJ9U7Tgg2PJ8BfTAek"} =
-               ShortUUID.encode(
-                 <<0x2A, 0x16, 0x2E, 0xE5, 0x02, 0xF4, 0x47, 0x01, 0x9E, 0x87, 0x72, 0x76, 0x2C,
-                   0xBC, 0xE5, 0xE2>>
-               )
-
-      assert "9VprZJ9U7Tgg2PJ8BfTAek" =
-               ShortUUID.encode!(
-                 <<0x2A, 0x16, 0x2E, 0xE5, 0x02, 0xF4, 0x47, 0x01, 0x9E, 0x87, 0x72, 0x76, 0x2C,
-                   0xBC, 0xE5, 0xE2>>
-               )
+      assert {:error, "Invalid UUID"} =
+               ShortUUID.encode(<<0x2A, 0x16, 0x2E, 0xE5, 0x02, 0xF4, 0x47, 0x01, 0x9E, 0x87, 0x72, 0x76, 0x2C,
+                   0xBC, 0xE5, 0xE2>>)
 
       # min
-      assert {:ok, "2222222222222222222222"} =
+      assert {:error, "Invalid UUID"} =
                ShortUUID.encode(<<0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0>>)
 
       # max
-      assert {:ok, "oZEq7ovRbLq6UnGMPwc8B5"} =
-               ShortUUID.encode(
-                 <<255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-                   255>>
-               )
+      assert {:error, "Invalid UUID"} =
+               ShortUUID.encode(<<255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255>>)
 
       # more than 128 bit
-      assert {:error, _} = ShortUUID.encode(<<1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0>>)
+      assert {:error, "Invalid UUID"} = ShortUUID.encode(<<1::size(136)>>)
 
       # less than 128 bit
-      assert {:error, _} = ShortUUID.encode(<<1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0>>)
+      assert {:error, "Invalid UUID"} = ShortUUID.encode(<<1::size(120)>>)
     end
   end
 
@@ -212,9 +200,9 @@ defmodule ShortUUIDTest do
   end
 
   @tag property: true
-  test "binary UUID encoding", %{property: true} do
+  test "rejects all binary input", %{property: true} do
     check all(binary <- random_binary_uuid()) do
-      {:ok, _} = ShortUUID.encode(binary)
+      assert {:error, "Invalid UUID"} = ShortUUID.encode(binary)
     end
   end
 
