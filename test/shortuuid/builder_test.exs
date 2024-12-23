@@ -19,7 +19,8 @@ defmodule ShortUUID.BuilderTest do
     test "uses first character for zero padding" do
       uuid = "00000000-0000-0000-0000-000000000000"
       {:ok, encoded} = CustomAlphabet.encode(uuid)
-      assert String.starts_with?(encoded, "0")  # "0" is first char in alphabet
+      # "0" is first char in alphabet
+      assert String.starts_with?(encoded, "0")
       assert {:ok, ^uuid} = CustomAlphabet.decode(encoded)
     end
   end
@@ -45,9 +46,13 @@ defmodule ShortUUID.BuilderTest do
       for alphabet <- predefined_alphabets do
         module_name = Module.concat(["ShortUUID", "BuilderTest", "#{alphabet}"])
 
-        Module.create(module_name, quote do
-          use ShortUUID.Builder, alphabet: unquote(alphabet)
-        end, Macro.Env.location(__ENV__))
+        Module.create(
+          module_name,
+          quote do
+            use ShortUUID.Builder, alphabet: unquote(alphabet)
+          end,
+          Macro.Env.location(__ENV__)
+        )
 
         # Test regular UUID encoding/decoding
         {:ok, encoded} = module_name.encode(test_uuid)
@@ -89,13 +94,19 @@ defmodule ShortUUID.BuilderTest do
 
   @tag property: true
   test "custom alphabets maintain encoding length" do
-    check all(test_alphabet <- valid_alphabet_generator(),
-             uuid <- uuid_generator()) do
+    check all(
+            test_alphabet <- valid_alphabet_generator(),
+            uuid <- uuid_generator()
+          ) do
       module_name = Module.concat(["ShortUUID", "BuilderTest", "Test#{System.unique_integer()}"])
 
-      Module.create(module_name, quote do
-        use ShortUUID.Builder, alphabet: unquote(test_alphabet)
-      end, Macro.Env.location(__ENV__))
+      Module.create(
+        module_name,
+        quote do
+          use ShortUUID.Builder, alphabet: unquote(test_alphabet)
+        end,
+        Macro.Env.location(__ENV__)
+      )
 
       {:ok, encoded} = module_name.encode(uuid)
       expected_length = ceil(:math.log(2 ** 128) / :math.log(String.length(test_alphabet)))
@@ -111,9 +122,13 @@ defmodule ShortUUID.BuilderTest do
 
       module_name = Module.concat(["ShortUUID", "BuilderTest", "Dyn#{System.unique_integer()}"])
 
-      Module.create(module_name, quote do
-        use ShortUUID.Builder, alphabet: unquote(test_alphabet)
-      end, Macro.Env.location(__ENV__))
+      Module.create(
+        module_name,
+        quote do
+          use ShortUUID.Builder, alphabet: unquote(test_alphabet)
+        end,
+        Macro.Env.location(__ENV__)
+      )
 
       {:ok, encoded} = module_name.encode(uuid)
       {:ok, decoded} = module_name.decode(encoded)

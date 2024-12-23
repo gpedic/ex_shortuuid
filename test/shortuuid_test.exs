@@ -79,11 +79,15 @@ defmodule ShortUUIDTest do
     test "rejects binary input" do
       # Remove accepting binary input tests and replace with rejection tests
       assert {:error, "Invalid UUID"} =
-               ShortUUID.encode(<<250, 98, 175, 128, 168, 97, 69, 108, 171, 119, 213, 103, 126, 46, 139, 168>>)
+               ShortUUID.encode(
+                 <<250, 98, 175, 128, 168, 97, 69, 108, 171, 119, 213, 103, 126, 46, 139, 168>>
+               )
 
       assert {:error, "Invalid UUID"} =
-               ShortUUID.encode(<<0x2A, 0x16, 0x2E, 0xE5, 0x02, 0xF4, 0x47, 0x01, 0x9E, 0x87, 0x72, 0x76, 0x2C,
-                   0xBC, 0xE5, 0xE2>>)
+               ShortUUID.encode(
+                 <<0x2A, 0x16, 0x2E, 0xE5, 0x02, 0xF4, 0x47, 0x01, 0x9E, 0x87, 0x72, 0x76, 0x2C,
+                   0xBC, 0xE5, 0xE2>>
+               )
 
       # min
       assert {:error, "Invalid UUID"} =
@@ -91,7 +95,10 @@ defmodule ShortUUIDTest do
 
       # max
       assert {:error, "Invalid UUID"} =
-               ShortUUID.encode(<<255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255>>)
+               ShortUUID.encode(
+                 <<255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+                   255>>
+               )
 
       # more than 128 bit
       assert {:error, "Invalid UUID"} = ShortUUID.encode(<<1::size(136)>>)
@@ -210,12 +217,14 @@ defmodule ShortUUIDTest do
   test "encoded UUIDs maintain length invariant", %{property: true} do
     check all(uuid <- uuid_generator()) do
       {:ok, encoded} = ShortUUID.encode(uuid)
-      assert String.length(encoded) == 22  # base57 length should always be 22
+      # base57 length should always be 22
+      assert String.length(encoded) == 22
 
       # Special case: nil UUID (all zeros)
       {:ok, encoded_nil} = ShortUUID.encode(@niluuid)
       assert String.length(encoded_nil) == 22
-      assert String.starts_with?(encoded_nil, "2")  # Should start with first char
+      # Should start with first char
+      assert String.starts_with?(encoded_nil, "2")
 
       # Special case: max UUID (all ones)
       {:ok, encoded_max} = ShortUUID.encode("ffffffff-ffff-ffff-ffff-ffffffffffff")
@@ -237,21 +246,27 @@ defmodule ShortUUIDTest do
     check all(uuid <- uuid_generator()) do
       {:ok, encoded} = ShortUUID.encode(uuid)
       {:ok, decoded} = ShortUUID.decode(encoded)
-      assert Regex.match?(~r/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/, decoded)
+
+      assert Regex.match?(
+               ~r/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+               decoded
+             )
     end
   end
 
   @tag property: true
   test "encoding maintains ordering of UUIDs", %{property: true} do
-    check all(uuid1 <- uuid_generator(),
-             uuid2 <- uuid_generator()) do
+    check all(
+            uuid1 <- uuid_generator(),
+            uuid2 <- uuid_generator()
+          ) do
       {:ok, encoded1} = ShortUUID.encode(uuid1)
       {:ok, encoded2} = ShortUUID.encode(uuid2)
       normalized1 = normalize(uuid1)
       normalized2 = normalize(uuid2)
 
       # If UUIDs are ordered, their encodings should maintain that order
-      assert (normalized1 <= normalized2) == (encoded1 <= encoded2)
+      assert normalized1 <= normalized2 == encoded1 <= encoded2
     end
   end
 

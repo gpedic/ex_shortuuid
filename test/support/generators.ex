@@ -1,4 +1,5 @@
 defmodule ShortUUID.TestGenerators do
+  @moduledoc false
   use ExUnitProperties
 
   # Generates a V4 UUID with a 50% chance of removing hyphens,
