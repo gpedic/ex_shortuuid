@@ -1,10 +1,32 @@
 defmodule ShortUUID.Core do
+  @moduledoc """
+  Core module for ShortUUID encoding and decoding.
+
+  This module provides the core functionality for encoding and decoding UUIDs
+  using various alphabets. It includes functions for parsing UUIDs, encoding
+  them into shorter strings, and decoding those strings back into UUIDs.
+
+  ## Functions
+
+  - `parse_uuid/1` - Parses a UUID string into a normalized format.
+  - `encode_binary/5` - Encodes a UUID into a shorter string using the specified alphabet.
+  - `decode_string/4` - Decodes a shortened string back into a UUID.
+  - `format_uuid/1` - Formats an integer value as a UUID string.
+  - `encode_int/5` - Encodes an integer value into a string using the specified alphabet.
+  - `decode_to_int/3` - Decodes a string into an integer value using the specified alphabet.
+  - `int_to_string/4` - Converts an integer value into a string using the specified alphabet.
+  """
+
   import Bitwise
 
   @doc false
-  def parse_uuid(<<a::binary-size(8), ?-, b::binary-size(4), ?-, c::binary-size(4), ?-,
-        d::binary-size(4), ?-, e::binary-size(12)>>) do
-    {:ok, <<a::binary-size(8), b::binary-size(4), c::binary-size(4), d::binary-size(4), e::binary-size(12)>>}
+  def parse_uuid(
+        <<a::binary-size(8), ?-, b::binary-size(4), ?-, c::binary-size(4), ?-, d::binary-size(4),
+          ?-, e::binary-size(12)>>
+      ) do
+    {:ok,
+     <<a::binary-size(8), b::binary-size(4), c::binary-size(4), d::binary-size(4),
+       e::binary-size(12)>>}
   end
 
   def parse_uuid(<<_::binary-size(32)>> = uuid), do: {:ok, uuid}
@@ -15,25 +37,53 @@ defmodule ShortUUID.Core do
   def parse_uuid(_), do: {:error, "Invalid UUID"}
 
   @doc false
-  def encode_binary(<<a::binary-size(8), ?-, b::binary-size(4), ?-, c::binary-size(4), ?-,
-        d::binary-size(4), ?-, e::binary-size(12)>>, base, alphabet_tuple, encoded_length, padding) do
+  def encode_binary(
+        <<a::binary-size(8), ?-, b::binary-size(4), ?-, c::binary-size(4), ?-, d::binary-size(4),
+          ?-, e::binary-size(12)>>,
+        base,
+        alphabet_tuple,
+        encoded_length,
+        padding
+      ) do
     encode_uuid_string(
-      <<a::binary-size(8), b::binary-size(4), c::binary-size(4), d::binary-size(4), e::binary-size(12)>>,
-      base, alphabet_tuple, encoded_length, padding)
+      <<a::binary-size(8), b::binary-size(4), c::binary-size(4), d::binary-size(4),
+        e::binary-size(12)>>,
+      base,
+      alphabet_tuple,
+      encoded_length,
+      padding
+    )
   end
 
   def encode_binary(<<_::binary-size(32)>> = uuid, base, alphabet_tuple, encoded_length, padding) do
     encode_uuid_string(uuid, base, alphabet_tuple, encoded_length, padding)
   end
 
-  def encode_binary(<<?{, a::binary-size(8), ?-, b::binary-size(4), ?-, c::binary-size(4), ?-,
-        d::binary-size(4), ?-, e::binary-size(12), ?}>>, base, alphabet_tuple, encoded_length, padding) do
+  def encode_binary(
+        <<?{, a::binary-size(8), ?-, b::binary-size(4), ?-, c::binary-size(4), ?-,
+          d::binary-size(4), ?-, e::binary-size(12), ?}>>,
+        base,
+        alphabet_tuple,
+        encoded_length,
+        padding
+      ) do
     encode_uuid_string(
-      <<a::binary-size(8), b::binary-size(4), c::binary-size(4), d::binary-size(4), e::binary-size(12)>>,
-      base, alphabet_tuple, encoded_length, padding)
+      <<a::binary-size(8), b::binary-size(4), c::binary-size(4), d::binary-size(4),
+        e::binary-size(12)>>,
+      base,
+      alphabet_tuple,
+      encoded_length,
+      padding
+    )
   end
 
-  def encode_binary(<<?{, uuid::binary-size(32), ?}>>, base, alphabet_tuple, encoded_length, padding) do
+  def encode_binary(
+        <<?{, uuid::binary-size(32), ?}>>,
+        base,
+        alphabet_tuple,
+        encoded_length,
+        padding
+      ) do
     encode_uuid_string(<<uuid::binary-size(32)>>, base, alphabet_tuple, encoded_length, padding)
   end
 
@@ -41,8 +91,11 @@ defmodule ShortUUID.Core do
 
   defp encode_uuid_string(uuid, base, alphabet_tuple, encoded_length, padding) do
     case Base.decode16(uuid, case: :mixed) do
-      {:ok, decoded_uuid} -> encode_int(decoded_uuid, base, alphabet_tuple, encoded_length, padding)
-      _ -> {:error, "Invalid UUID"}
+      {:ok, decoded_uuid} ->
+        encode_int(decoded_uuid, base, alphabet_tuple, encoded_length, padding)
+
+      _ ->
+        {:error, "Invalid UUID"}
     end
   end
 
@@ -85,8 +138,10 @@ defmodule ShortUUID.Core do
     |> insert_dashes()
   end
 
-  defp insert_dashes(<<a::binary-size(8), b::binary-size(4), c::binary-size(4),
-                      d::binary-size(4), e::binary-size(12)>>) do
+  defp insert_dashes(
+         <<a::binary-size(8), b::binary-size(4), c::binary-size(4), d::binary-size(4),
+           e::binary-size(12)>>
+       ) do
     a <> "-" <> b <> "-" <> c <> "-" <> d <> "-" <> e
   end
 
@@ -96,13 +151,15 @@ defmodule ShortUUID.Core do
     |> Enum.reduce_while({:ok, 0}, fn char, {:ok, acc} ->
       case Map.fetch(codepoint_index, char) do
         {:ok, value} -> {:cont, {:ok, acc * base + value}}
-        :error -> {:halt, {:error, "Invalid character"}}  # Return error instead of continuing
+        # Return error instead of continuing
+        :error -> {:halt, {:error, "Invalid character"}}
       end
     end)
   end
 
   defp int_to_string(number, base, alphabet_tuple, acc \\ [])
   defp int_to_string(0, _, _, acc), do: to_string(acc)
+
   defp int_to_string(number, base, alphabet_tuple, acc) when number > 0 do
     int_to_string(
       div(number, base),
