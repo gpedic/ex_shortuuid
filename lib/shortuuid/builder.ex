@@ -1,22 +1,22 @@
 defmodule ShortUUID.Builder do
   @moduledoc """
-  ShortUUID is a module for encoding and decoding UUIDs (Universally Unique Identifiers) using various predefined or custom alphabets.
+  ShortUUID.Builder is a module for encoding and decoding UUIDs (Universally Unique Identifiers) using various predefined or custom alphabets.
 
   ## Usage
 
-  To use ShortUUID in your module, simply `use` it and optionally provide an alphabet option:
+  To create your module, simply `use` it and optionally provide an alphabet option:
 
       defmodule MyModule do
         use ShortUUID.Builder, alphabet: :base58
       end
 
-  The `alphabet` option can be one of the predefined alphabets or a custom string. If no alphabet is provided, the default alphabet (`base57`) will be used.
+  The `alphabet` option can be one of the predefined alphabets or a custom string. If no alphabet is provided, the default alphabet (`base57_shortuuid`) will be used.
 
   ## Predefined Alphabets
 
   The following predefined alphabets are available:
 
-  - `:base57` - "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz" (default)
+  - `:base57_shortuuid` - "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz" (default)
   - `:base32` - "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
   - `:base32_crockford` - "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
   - `:base32_hex` - "0123456789ABCDEFGHIJKLMNOPQRSTUV"
@@ -61,9 +61,15 @@ defmodule ShortUUID.Builder do
   defmacro __using__(opts) do
     alphabet =
       case Keyword.get(opts, :alphabet) do
-        atom when is_atom(atom) -> Map.get(@predefined_alphabets, atom, @predefined_alphabets[:base57_shortuuid])
-        binary when is_binary(binary) -> validate_alphabet!(binary)
-        other -> validate_alphabet!(other)  # This will raise the appropriate error
+        atom when is_atom(atom) ->
+          Map.get(@predefined_alphabets, atom, @predefined_alphabets[:base57_shortuuid])
+
+        binary when is_binary(binary) ->
+          validate_alphabet!(binary)
+
+        # This will raise the appropriate error
+        other ->
+          validate_alphabet!(other)
       end
 
     base = String.length(alphabet)
@@ -81,7 +87,8 @@ defmodule ShortUUID.Builder do
       @base String.length(@alphabet)
       @encoded_length unquote(encoded_length)
 
-      def encode(uuid), do: Core.encode_binary(uuid, @base, @alphabet_tuple, @encoded_length, @padding_char)
+      def encode(uuid),
+        do: Core.encode_binary(uuid, @base, @alphabet_tuple, @encoded_length, @padding_char)
 
       def encode!(uuid) do
         case encode(uuid) do
@@ -103,11 +110,14 @@ defmodule ShortUUID.Builder do
 
   defp validate_alphabet!(alphabet) when is_binary(alphabet) do
     graphemes = String.graphemes(alphabet)
+
     cond do
       length(graphemes) < 16 ->
         raise ArgumentError, message: "Alphabet must contain at least 16 unique characters"
+
       length(Enum.uniq(graphemes)) != length(graphemes) ->
         raise ArgumentError, message: "Alphabet must not contain duplicate characters"
+
       true ->
         alphabet
     end
