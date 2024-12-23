@@ -10,21 +10,21 @@
 
 <!-- MDOC !-->
 
-ShortUUID is a lightweight Elixir library that generates short and unique IDs for use in URLs. It provides a solution when you need IDs that are easy to use and understand for users.
-
-Instead of using long and complex UUIDs, ShortUUID converts them into shorter strings using a combination of lowercase and uppercase letters, as well as digits. It avoids using similar-looking characters such as 'l', '1', 'I', 'O', and '0'.
+ShortUUID is a lightweight Elixir library for generating short, unique IDs in URLs. It turns standard UUIDs into smaller strings ideal for use in URLs.
+You can choose from a set of predefined alphabets or define your own. The default alphabet includes lowercase letters, uppercase letters, and digits, omitting characters like 'l', '1', 'I', 'O', and '0' to keep them readable.
 
 **Note:** It's worth noting that different ShortUUID implementations should work together if they use the same set of characters. However, there is no official standard, so if you plan to use ShortUUID with other libraries, it's a good idea to research and test for compatibility.
 
-Unlike some other libraries, ShortUUID doesn't generate UUIDs itself. Instead, you can input any valid UUID into the `ShortUUID.encode/1`. To generate UUIDs, you can use libraries like
+Unlike some other solutions, ShortUUID does not produce UUIDs on its own. To generate UUIDs, use libraries such as
 [Elixir UUID](https://github.com/zyro/elixir-uuid), [Erlang UUID](https://github.com/okeuday/uuid) and also [Ecto](https://hexdocs.pm/ecto/Ecto.UUID.html) as it can generate version 4 UUIDs.
 
-ShortUUID supports common UUID formats and is case-insensitive. It also supports binary UUIDs returned from DBs like PostgreSQL when the uuid type is used to store the UUID.
+ShortUUID supports common UUID formats and is case-insensitive.
 
 ## Compatibility
 
-Starting with version `v3.0.0`, this library will follow suit with changes in other language implementations and move the most significant bit of the encoded value to the start. This also means that padding will be applied to the end of the string, not the start
-This change will restore compatibility with other libraries like [shortuuid](https://github.com/skorokithakis/shortuuid) from v1.0.0 onwards and [short-uuid
+Starting with version `v3.0.0`, ShortUUID aligns with other language implementations by moving the most significant bit to the start of the encoded value. This also means padding shifts to the end of the string, rather than the beginning.
+
+These changes restore compatibility with libraries like [shortuuid](https://github.com/skorokithakis/shortuuid) from v1.0.0 onwards and [short-uuid
 ](https://github.com/oculus42/short-uuid).
 
 Before `v3.0.0`
@@ -68,7 +68,7 @@ Add `:shortuuid` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:shortuuid, "~> 3.0"}
+    {:shortuuid, "~> 4.0"}
   ]
 end
 ```
@@ -94,6 +94,48 @@ iex> "nQtAWSRQ6ByybDtRs7dQwE" |> ShortUUID.decode!
 If you would like to use ShortUUID with Ecto schemas try [Ecto.ShortUUID](https://github.com/gpedic/ecto_shortuuid).
 
 It provides a custom Ecto type which allows for ShortUUID primary and foreign keys while staying compatible with `:binary_key` (`EctoUUID`).
+
+## Custom Alphabets
+
+Starting with version `v4.0.0`, ShortUUID allows you to define custom alphabets for encoding and decoding UUIDs. You can use predefined alphabets or define your own.
+
+### Restrictions
+
+- The alphabet must contain at least 16 unique characters.
+- The alphabet must not contain duplicate characters.
+
+### Predefined Alphabets
+
+Starting with version `v4.0.0`, the following predefined alphabets are available:
+
+- `:base57` - "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz" (default)
+- `:base32` - "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
+- `:base32_crockford` - "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
+- `:base32_hex` - "0123456789ABCDEFGHIJKLMNOPQRSTUV"
+- `:base32_rfc4648` - "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
+- `:base32_z` - "ybndrfg8ejkmcpqxot1uwisza345h769"
+- `:base58` - "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+- `:base62` - "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+- `:base64` - "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+- `:base64_url` - "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+
+### Using a custom or predefined alphabet
+
+```elixir
+defmodule MyPredefinedUUID do
+  use ShortUUID.Builder, alphabet: :base64_url
+end
+
+defmodule MyCustomUUID do
+  use ShortUUID.Builder, alphabet: "0123456789ABCDEF"
+end
+
+iex> MyCustomUUID.encode("550e8400-e29b-41d4-a716-446655440000")
+{:ok, "H9cNmGXLEc8NWcZzSThA9S"}
+
+iex> MyCustomUUID.decode("H9cNmGXLEc8NWcZzSThA9S")
+{:ok, "550e8400-e29b-41d4-a716-446655440000"}
+```
 
 ## Documentation
 
