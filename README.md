@@ -11,21 +11,38 @@
 <!-- MDOC !-->
 
 ShortUUID is a lightweight Elixir library for generating short, unique IDs in URLs. It turns standard UUIDs into smaller strings ideal for use in URLs.
-You can choose from a set of predefined alphabets or define your own. The default alphabet includes lowercase letters, uppercase letters, and digits, omitting characters like 'l', '1', 'I', 'O', and '0' to keep them readable.
+You can choose from a set of predefined alphabets or define your own. 
+The default alphabet includes lowercase letters, uppercase letters, and digits, omitting characters like 'l', '1', 'I', 'O', and '0' to keep them readable.
 
-**Note:** It's worth noting that different ShortUUID implementations should work together if they use the same set of characters. However, there is no official standard, so if you plan to use ShortUUID with other libraries, it's a good idea to research and test for compatibility.
+**Note:** Different ShortUUID implementations be compatible as long as they use the same alphabet. However, there is no official standard, so if you plan to use ShortUUID with other libraries, it's a good idea to research and test for compatibility.
 
-Unlike some other solutions, ShortUUID does not produce UUIDs on its own. To generate UUIDs, use libraries such as
+Unlike some other solutions, ShortUUID does not produce UUIDs on its own as there are already plenty of libraries to do so. To generate UUIDs, use libraries such as
 [Elixir UUID](https://github.com/zyro/elixir-uuid), [Erlang UUID](https://github.com/okeuday/uuid) and also [Ecto](https://hexdocs.pm/ecto/Ecto.UUID.html) as it can generate version 4 UUIDs.
 
 ShortUUID supports common UUID formats and is case-insensitive.
 
 ## Compatibility
 
-Starting with version `v3.0.0`, ShortUUID aligns with other language implementations by moving the most significant bit to the start of the encoded value. This also means padding shifts to the end of the string, rather than the beginning.
+### v4.0.0 breaking changes
 
-These changes restore compatibility with libraries like [shortuuid](https://github.com/skorokithakis/shortuuid) from v1.0.0 onwards and [short-uuid
-](https://github.com/oculus42/short-uuid).
+Raw binary UUID input (as `<<...>>`) is no longer supported. UUIDs must be provided as strings in standard UUID format (`"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"`) or as 32-character hex strings without hyphens.
+
+Examples of supported formats:
+```elixir
+# Supported
+"550e8400-e29b-41d4-a716-446655440000"  # With hyphens
+"550e8400e29b41d4a716446655440000"      # Without hyphens
+
+# No longer supported in v4.0.0
+<<85, 14, 132, 0, 226, 155, 65, 212, 167, 22, 68, 102, 85, 68, 0, 0>>
+```
+
+### v3.0.0 breaking changes
+
+Changed bit order and padding behavior to align with other language implementations:
+- Most significant bits are now encoded first
+- Padding characters appear at the end of the string
+- Compatible with Python's [shortuuid](https://github.com/skorokithakis/shortuuid) v1.0.0+ and Node.js [short-uuid](https://github.com/oculus42/short-uuid)
 
 Before `v3.0.0`
 ```elixir
@@ -137,6 +154,28 @@ iex> MyCustomUUID.decode("H9cNmGXLEc8NWcZzSThA9S")
 {:ok, "550e8400-e29b-41d4-a716-446655440000"}
 ```
 
+### Just for fun
+
+Since v4.0.0 alphabets are not limited to alphanumeric characters either
+
+```elixir
+defmodule UnicodeUUID do
+  use ShortUUID.Builder, alphabet: "🌟💫✨⭐️🌙🌎🌍🌏🌑🌒🌓🌔🌕🌖🌗🌘"
+end
+
+iex> UnicodeUUID.encode("550e8400-e29b-41d4-a716-446655440000")
+{:ok, "🌎🌎🌟🌗🌑🌙🌟🌟🌗✨🌒🌔🌙💫🌖🌙🌓🌏💫🌍🌙🌙🌍🌍🌎🌎🌙🌙🌟🌟🌟🌟"}
+
+
+defmodule SmileyUUID do
+  use ShortUUID.Builder, alphabet: "😀😊😄😍🥰😘😜🤪😋🤔😌🧐😐😑😶😮😲😱😴🥱😪😢😭😤😎🤓😇😈👻👽🤖🤡💀"
+end
+
+iex> SmileyUUID.encode("550e8400-e29b-41d4-a716-446655440000")
+{:ok, "😊🤪😢😘💀🥰😲😊🤡🤖🤔😊😘😤👽🤓👻😊👽😲😋😀😭😇😲🤖"}
+
+```
+
 ## Documentation
 
 Look up the full documentation at [https://hexdocs.pm/shortuuid](https://hexdocs.pm/shortuuid).
@@ -147,7 +186,7 @@ Inspired by [shortuuid](https://github.com/skorokithakis/shortuuid).
 
 ## Copyright and License
 
-Copyright (c) 2019 Goran Pedić
+Copyright (c) 2024 Goran Pedić
 
 This work is free. You can redistribute it and/or modify it under the
 terms of the MIT License. 
