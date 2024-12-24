@@ -60,7 +60,6 @@ defmodule ShortUUID.BuilderTest do
         :base32,
         :base32_crockford,
         :base32_hex,
-        :base32_rfc4648,
         :base32_z,
         :base58,
         :base62,

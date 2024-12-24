@@ -125,11 +125,10 @@ Starting with version `v4.0.0`, ShortUUID allows you to define custom alphabets 
 
 Starting with version `v4.0.0`, the following predefined alphabets are available:
 
-- `:base57` - "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz" (default)
+- `:base57_shortuuid` - "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 - `:base32` - "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
 - `:base32_crockford` - "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
 - `:base32_hex` - "0123456789ABCDEFGHIJKLMNOPQRSTUV"
-- `:base32_rfc4648` - "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
 - `:base32_z` - "ybndrfg8ejkmcpqxot1uwisza345h769"
 - `:base58` - "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 - `:base62` - "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"

@@ -20,7 +20,6 @@ defmodule ShortUUID.Builder do
   - `:base32` - "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
   - `:base32_crockford` - "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
   - `:base32_hex` - "0123456789ABCDEFGHIJKLMNOPQRSTUV"
-  - `:base32_rfc4648` - "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
   - `:base32_z` - "ybndrfg8ejkmcpqxot1uwisza345h769"
   - `:base58` - "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
   - `:base62` - "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
@@ -50,7 +49,6 @@ defmodule ShortUUID.Builder do
     base32: "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567",
     base32_crockford: "0123456789ABCDEFGHJKMNPQRSTVWXYZ",
     base32_hex: "0123456789ABCDEFGHIJKLMNOPQRSTUV",
-    base32_rfc4648: "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567",
     base32_z: "ybndrfg8ejkmcpqxot1uwisza345h769",
     base58: "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz",
     base62: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
