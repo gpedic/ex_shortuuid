@@ -23,8 +23,24 @@ defmodule ShortUUID.TestGenerators do
     end)
   end
 
-  def valid_alphabet_generator do
-    # Creates a list of all alphanumeric characters
+  def valid_emoji_alphabet_generator do
+    # Creates a list of emoji characters
+    all_chars =
+      Enum.to_list(0x1F300..0x1F3FF) # Misc Symbols & Pictographs
+      |> Kernel.++(Enum.to_list(0x1F400..0x1F4FF)) # Pictographs Extended
+      |> Kernel.++(Enum.to_list(0x1F500..0x1F5FF)) # Transport & Map Symbols
+      |> Kernel.++(Enum.to_list(0x1F600..0x1F64F)) # Emoticons
+      |> Kernel.++(Enum.to_list(0x1F680..0x1F6FF)) # Transport & Map Symbols Extended
+      |> Kernel.++(Enum.to_list(0x1F900..0x1F9FF)) # Supplemental Symbols & Pictographs
+      |> List.to_string()
+      |> String.graphemes()
+      |> Enum.uniq()
+
+    generate_alphabet(all_chars)
+  end
+
+  def valid_alphanumeric_alphabet_generator do
+    # Creates a list of alphanumeric characters
     all_chars =
       ?0..?9
       |> Enum.to_list()
@@ -33,17 +49,27 @@ defmodule ShortUUID.TestGenerators do
       |> List.to_string()
       |> String.graphemes()
 
-    # Add additional symbols that are supported
-    all_chars = all_chars ++ ["+", "-", "_", "/"]
+    generate_alphabet(all_chars)
+  end
 
-    # Shuffle them, and take a random length between
-    # 16 and 64 to ensure at least 16 unique characters.
-    # Use StreamData.bind to transform the random length
-    # into a generator that returns a random subset
-    # of characters joined into a string.
-    StreamData.bind(StreamData.integer(16..64), fn length ->
+  def valid_url_safe_alphabet_generator do
+    # Creates a list of URL-safe characters
+    all_chars =
+      ?0..?9
+      |> Enum.to_list()
+      |> Kernel.++(Enum.to_list(?A..?Z))
+      |> Kernel.++(Enum.to_list(?a..?z))
+      |> Kernel.++(String.to_charlist("-._~+/")) # URL-safe special chars
+      |> List.to_string()
+      |> String.graphemes()
+
+    generate_alphabet(all_chars)
+  end
+
+  defp generate_alphabet(source_chars) do
+    StreamData.bind(StreamData.integer(16..256), fn length ->
       subset =
-        all_chars
+        source_chars
         |> Enum.shuffle()
         |> Enum.take(length)
 

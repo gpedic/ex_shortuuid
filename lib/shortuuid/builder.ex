@@ -10,13 +10,13 @@ defmodule ShortUUID.Builder do
         use ShortUUID.Builder, alphabet: :base58
       end
 
-  The `alphabet` option can be one of the predefined alphabets or a custom string. If no alphabet is provided, the default alphabet (`base57_shortuuid`) will be used.
+  The `alphabet` option must be one of the predefined alphabets or a custom string (16+ unique characters).
 
   ## Predefined Alphabets
 
   The following predefined alphabets are available:
 
-  - `:base57_shortuuid` - "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz" (default)
+  - `:base57_shortuuid` - "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
   - `:base32` - "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
   - `:base32_crockford` - "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
   - `:base32_hex` - "0123456789ABCDEFGHIJKLMNOPQRSTUV"
@@ -58,32 +58,29 @@ defmodule ShortUUID.Builder do
     base64_url: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
   }
 
+  @max_alphabet_length 256
+
   defmacro __using__(opts) do
-    alphabet =
-      case Keyword.get(opts, :alphabet) do
-        atom when is_atom(atom) ->
-          Map.get(@predefined_alphabets, atom, @predefined_alphabets[:base57_shortuuid])
+    alphabet_expr = Keyword.fetch!(opts, :alphabet)
+    expanded_alphabet = Macro.expand(alphabet_expr, __CALLER__)
 
-        binary when is_binary(binary) ->
-          validate_alphabet!(binary)
+    unless is_atom(expanded_alphabet) or is_binary(expanded_alphabet) do
+      raise ArgumentError, "Alphabet must be a literal string or supported atom, got: #{Macro.to_string(alphabet_expr)}"
+    end
 
-        # This will raise the appropriate error
-        other ->
-          validate_alphabet!(other)
-      end
-
-    base = String.length(alphabet)
+    validated_alphabet = validate_compile_time_alphabet!(expanded_alphabet)
+    base = String.length(validated_alphabet)
     encoded_length = ceil(:math.log(2 ** 128) / :math.log(base))
-    padding_char = String.first(alphabet)
+    padding_char = String.first(validated_alphabet)
 
     quote do
       import Bitwise
       alias ShortUUID.Core
 
-      @alphabet unquote(alphabet)
+      @alphabet unquote(validated_alphabet)
       @padding_char unquote(padding_char)
       @alphabet_tuple @alphabet |> String.graphemes() |> List.to_tuple()
-      @codepoint_index String.to_charlist(@alphabet) |> Enum.with_index() |> Map.new()
+      @codepoint_index @alphabet |> String.graphemes() |> Enum.with_index() |> Map.new()
       @base String.length(@alphabet)
       @encoded_length unquote(encoded_length)
 
@@ -97,7 +94,8 @@ defmodule ShortUUID.Builder do
         end
       end
 
-      def decode(string), do: Core.decode_string(string, @base, @codepoint_index, @encoded_length)
+      def decode(string),
+        do: Core.decode_string(string, @base, @codepoint_index, @encoded_length)
 
       def decode!(string) do
         case decode(string) do
@@ -108,12 +106,33 @@ defmodule ShortUUID.Builder do
     end
   end
 
+  defp validate_compile_time_alphabet!(alphabet) when is_atom(alphabet) do
+    predefined = Map.get(@predefined_alphabets, alphabet)
+    if predefined do
+      predefined
+    else
+      raise ArgumentError, "Unknown alphabet atom: #{inspect(alphabet)}"
+    end
+  end
+
+  defp validate_compile_time_alphabet!(alphabet) when is_binary(alphabet) do
+    validate_alphabet!(alphabet)
+  end
+
+  defp validate_compile_time_alphabet!(other) do
+    raise ArgumentError,
+          "Alphabet must be a known atom or string, got: #{inspect(other)}"
+  end
+
   defp validate_alphabet!(alphabet) when is_binary(alphabet) do
     graphemes = String.graphemes(alphabet)
 
     cond do
       length(graphemes) < 16 ->
-        raise ArgumentError, message: "Alphabet must contain at least 16 unique characters"
+        raise ArgumentError, message: "Alphabet must contain at least 16 characters"
+
+      length(graphemes) > @max_alphabet_length ->
+        raise ArgumentError, message: "Alphabet must not contain more than #{@max_alphabet_length} characters"
 
       length(Enum.uniq(graphemes)) != length(graphemes) ->
         raise ArgumentError, message: "Alphabet must not contain duplicate characters"
@@ -121,9 +140,5 @@ defmodule ShortUUID.Builder do
       true ->
         alphabet
     end
-  end
-
-  defp validate_alphabet!(other) do
-    raise ArgumentError, message: "Alphabet must be a string, got: #{inspect(other)}"
   end
 end

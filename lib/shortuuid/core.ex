@@ -147,7 +147,7 @@ defmodule ShortUUID.Core do
 
   defp decode_to_int(string, base, codepoint_index) do
     string
-    |> String.to_charlist()
+    |> String.graphemes()
     |> Enum.reduce_while({:ok, 0}, fn char, {:ok, acc} ->
       case Map.fetch(codepoint_index, char) do
         {:ok, value} -> {:cont, {:ok, acc * base + value}}

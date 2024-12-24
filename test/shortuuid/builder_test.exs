@@ -3,6 +3,7 @@ defmodule ShortUUID.BuilderTest do
   use ExUnitProperties
 
   import ShortUUID.TestGenerators
+  import StreamData
 
   describe "custom alphabets" do
     defmodule CustomAlphabet do
@@ -22,6 +23,29 @@ defmodule ShortUUID.BuilderTest do
       # "0" is first char in alphabet
       assert String.starts_with?(encoded, "0")
       assert {:ok, ^uuid} = CustomAlphabet.decode(encoded)
+    end
+
+    test "supports unicode characters in custom alphabets" do
+      defmodule UnicodeUUID do
+        use ShortUUID.Builder, alphabet: "🌟💫✨⭐️🌙🌎🌍🌏🌑🌒🌓🌔🌕🌖🌗🌘"
+      end
+
+      uuid = UUID.uuid4()
+      {:ok, encoded} = UnicodeUUID.encode(uuid)
+      {:ok, decoded} = UnicodeUUID.decode(encoded)
+
+      assert decoded == uuid
+      assert String.length(encoded) == 32
+
+      defmodule SmileyUUID do
+        use ShortUUID.Builder, alphabet: "😀😃😄😁😅😂🤣😊😇😉😌😍🥰😘😋😛😜🤪😝🤑🤗🤔🤨😐😑😶😏😒🙄😬🤥😪😴🤤😷🤒🤕🤢🤮🤧🥵🥶🥴😵🤯🤠🥳😎🤓🧐😕😟🙁😓😮😯😲😳🥺😦😧😨😰"
+      end
+
+      {:ok, encoded2} = SmileyUUID.encode(uuid)
+      {:ok, decoded2} = SmileyUUID.decode(encoded2)
+
+      assert decoded2 == uuid
+      assert String.length(encoded2) == 22
     end
   end
 
@@ -68,25 +92,35 @@ defmodule ShortUUID.BuilderTest do
 
   describe "validation" do
     test "rejects invalid alphabets" do
-      assert_raise ArgumentError, ~r/at least 16/, fn ->
+      assert_raise ArgumentError, "Alphabet must contain at least 16 characters", fn ->
         defmodule TooShortAlphabet do
           use ShortUUID.Builder, alphabet: "abc"
         end
       end
-    end
 
-    test "rejects duplicate characters" do
-      assert_raise ArgumentError, ~r/duplicate/, fn ->
+      assert_raise ArgumentError, "Alphabet must not contain duplicate characters", fn ->
         defmodule DuplicateChars do
-          use ShortUUID.Builder, alphabet: String.duplicate("a", 32)
+          use ShortUUID.Builder, alphabet: "AABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
+        end
+      end
+
+      assert_raise ArgumentError, "Alphabet must be a literal string or supported atom, got: 12345", fn ->
+        defmodule InvalidType do
+          use ShortUUID.Builder, alphabet: 12345
+        end
+      end
+
+      assert_raise ArgumentError, "Alphabet must be a literal string or supported atom, got: [\"a\", \"b\", \"c\"]", fn ->
+        defmodule InvalidFunctionCall do
+          use ShortUUID.Builder, alphabet: ["a", "b", "c"]
         end
       end
     end
 
-    test "validates alphabet is a string" do
-      assert_raise ArgumentError, ~r/must be a string/, fn ->
-        defmodule InvalidType do
-          use ShortUUID.Builder, alphabet: ~c"not a string"
+    test "rejects too long alphabets" do
+      assert_raise ArgumentError, "Alphabet must not contain more than 256 characters", fn ->
+        defmodule TooLongAlphabet do
+          use ShortUUID.Builder, alphabet: unquote(String.duplicate("*", 257))
         end
       end
     end
@@ -94,8 +128,14 @@ defmodule ShortUUID.BuilderTest do
 
   @tag property: true
   test "custom alphabets maintain encoding length" do
+    alphabet_generator = one_of([
+      valid_emoji_alphabet_generator(),
+      valid_alphanumeric_alphabet_generator(),
+      valid_url_safe_alphabet_generator()
+    ])
+
     check all(
-            test_alphabet <- valid_alphabet_generator(),
+            test_alphabet <- alphabet_generator,
             uuid <- uuid_generator()
           ) do
       module_name = Module.concat(["ShortUUID", "BuilderTest", "Test#{System.unique_integer()}"])
@@ -116,8 +156,13 @@ defmodule ShortUUID.BuilderTest do
 
   @tag property: true
   test "encode/decode works with randomly generated valid alphabets" do
-    check all(test_alphabet <- valid_alphabet_generator()) do
-      # Use elixir_uuid to generate a standard UUID
+    alphabet_generator = one_of([
+      valid_emoji_alphabet_generator(),
+      valid_alphanumeric_alphabet_generator(),
+      valid_url_safe_alphabet_generator()
+    ])
+
+    check all(test_alphabet <- alphabet_generator) do
       uuid = UUID.uuid4()
 
       module_name = Module.concat(["ShortUUID", "BuilderTest", "Dyn#{System.unique_integer()}"])
