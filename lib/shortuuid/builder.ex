@@ -65,7 +65,8 @@ defmodule ShortUUID.Builder do
     expanded_alphabet = Macro.expand(alphabet_expr, __CALLER__)
 
     unless is_atom(expanded_alphabet) or is_binary(expanded_alphabet) do
-      raise ArgumentError, "Alphabet must be a literal string or supported atom, got: #{Macro.to_string(alphabet_expr)}"
+      raise ArgumentError,
+            "Alphabet must be a literal string or supported atom, got: #{Macro.to_string(alphabet_expr)}"
     end
 
     validated_alphabet = validate_compile_time_alphabet!(expanded_alphabet)
@@ -108,6 +109,7 @@ defmodule ShortUUID.Builder do
 
   defp validate_compile_time_alphabet!(alphabet) when is_atom(alphabet) do
     predefined = Map.get(@predefined_alphabets, alphabet)
+
     if predefined do
       predefined
     else
@@ -132,7 +134,8 @@ defmodule ShortUUID.Builder do
         raise ArgumentError, message: "Alphabet must contain at least 16 characters"
 
       length(graphemes) > @max_alphabet_length ->
-        raise ArgumentError, message: "Alphabet must not contain more than #{@max_alphabet_length} characters"
+        raise ArgumentError,
+          message: "Alphabet must not contain more than #{@max_alphabet_length} characters"
 
       length(Enum.uniq(graphemes)) != length(graphemes) ->
         raise ArgumentError, message: "Alphabet must not contain duplicate characters"

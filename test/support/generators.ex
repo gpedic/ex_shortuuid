@@ -25,13 +25,19 @@ defmodule ShortUUID.TestGenerators do
 
   def valid_emoji_alphabet_generator do
     # Creates a list of emoji characters
+    # Misc Symbols & Pictographs
     all_chars =
-      Enum.to_list(0x1F300..0x1F3FF) # Misc Symbols & Pictographs
-      |> Kernel.++(Enum.to_list(0x1F400..0x1F4FF)) # Pictographs Extended
-      |> Kernel.++(Enum.to_list(0x1F500..0x1F5FF)) # Transport & Map Symbols
-      |> Kernel.++(Enum.to_list(0x1F600..0x1F64F)) # Emoticons
-      |> Kernel.++(Enum.to_list(0x1F680..0x1F6FF)) # Transport & Map Symbols Extended
-      |> Kernel.++(Enum.to_list(0x1F900..0x1F9FF)) # Supplemental Symbols & Pictographs
+      Enum.to_list(0x1F300..0x1F3FF)
+      # Pictographs Extended
+      |> Kernel.++(Enum.to_list(0x1F400..0x1F4FF))
+      # Transport & Map Symbols
+      |> Kernel.++(Enum.to_list(0x1F500..0x1F5FF))
+      # Emoticons
+      |> Kernel.++(Enum.to_list(0x1F600..0x1F64F))
+      # Transport & Map Symbols Extended
+      |> Kernel.++(Enum.to_list(0x1F680..0x1F6FF))
+      # Supplemental Symbols & Pictographs
+      |> Kernel.++(Enum.to_list(0x1F900..0x1F9FF))
       |> List.to_string()
       |> String.graphemes()
       |> Enum.uniq()
@@ -59,7 +65,8 @@ defmodule ShortUUID.TestGenerators do
       |> Enum.to_list()
       |> Kernel.++(Enum.to_list(?A..?Z))
       |> Kernel.++(Enum.to_list(?a..?z))
-      |> Kernel.++(String.to_charlist("-._~+/")) # URL-safe special chars
+      # URL-safe special chars
+      |> Kernel.++(String.to_charlist("-._~+/"))
       |> List.to_string()
       |> String.graphemes()
 

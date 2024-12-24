@@ -38,7 +38,8 @@ defmodule ShortUUID.BuilderTest do
       assert String.length(encoded) == 32
 
       defmodule SmileyUUID do
-        use ShortUUID.Builder, alphabet: "😀😃😄😁😅😂🤣😊😇😉😌😍🥰😘😋😛😜🤪😝🤑🤗🤔🤨😐😑😶😏😒🙄😬🤥😪😴🤤😷🤒🤕🤢🤮🤧🥵🥶🥴😵🤯🤠🥳😎🤓🧐😕😟🙁😓😮😯😲😳🥺😦😧😨😰"
+        use ShortUUID.Builder,
+          alphabet: "😀😃😄😁😅😂🤣😊😇😉😌😍🥰😘😋😛😜🤪😝🤑🤗🤔🤨😐😑😶😏😒🙄😬🤥😪😴🤤😷🤒🤕🤢🤮🤧🥵🥶🥴😵🤯🤠🥳😎🤓🧐😕😟🙁😓😮😯😲😳🥺😦😧😨😰"
       end
 
       {:ok, encoded2} = SmileyUUID.encode(uuid)
@@ -104,17 +105,21 @@ defmodule ShortUUID.BuilderTest do
         end
       end
 
-      assert_raise ArgumentError, "Alphabet must be a literal string or supported atom, got: 12345", fn ->
-        defmodule InvalidType do
-          use ShortUUID.Builder, alphabet: 12345
-        end
-      end
+      assert_raise ArgumentError,
+                   "Alphabet must be a literal string or supported atom, got: 12345",
+                   fn ->
+                     defmodule InvalidType do
+                       use ShortUUID.Builder, alphabet: 12345
+                     end
+                   end
 
-      assert_raise ArgumentError, "Alphabet must be a literal string or supported atom, got: [\"a\", \"b\", \"c\"]", fn ->
-        defmodule InvalidFunctionCall do
-          use ShortUUID.Builder, alphabet: ["a", "b", "c"]
-        end
-      end
+      assert_raise ArgumentError,
+                   "Alphabet must be a literal string or supported atom, got: [\"a\", \"b\", \"c\"]",
+                   fn ->
+                     defmodule InvalidFunctionCall do
+                       use ShortUUID.Builder, alphabet: ["a", "b", "c"]
+                     end
+                   end
     end
 
     test "rejects too long alphabets" do
@@ -128,11 +133,12 @@ defmodule ShortUUID.BuilderTest do
 
   @tag property: true
   test "custom alphabets maintain encoding length" do
-    alphabet_generator = one_of([
-      valid_emoji_alphabet_generator(),
-      valid_alphanumeric_alphabet_generator(),
-      valid_url_safe_alphabet_generator()
-    ])
+    alphabet_generator =
+      one_of([
+        valid_emoji_alphabet_generator(),
+        valid_alphanumeric_alphabet_generator(),
+        valid_url_safe_alphabet_generator()
+      ])
 
     check all(
             test_alphabet <- alphabet_generator,
@@ -156,11 +162,12 @@ defmodule ShortUUID.BuilderTest do
 
   @tag property: true
   test "encode/decode works with randomly generated valid alphabets" do
-    alphabet_generator = one_of([
-      valid_emoji_alphabet_generator(),
-      valid_alphanumeric_alphabet_generator(),
-      valid_url_safe_alphabet_generator()
-    ])
+    alphabet_generator =
+      one_of([
+        valid_emoji_alphabet_generator(),
+        valid_alphanumeric_alphabet_generator(),
+        valid_url_safe_alphabet_generator()
+      ])
 
     check all(test_alphabet <- alphabet_generator) do
       uuid = UUID.uuid4()
