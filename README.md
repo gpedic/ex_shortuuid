@@ -138,18 +138,18 @@ Starting with version `v4.0.0`, the following predefined alphabets are available
 ### Using a custom or predefined alphabet
 
 ```elixir
-defmodule MyPredefinedUUID do
-  use ShortUUID.Builder, alphabet: :base64_url
+defmodule MyBase58UUID do
+  use ShortUUID.Builder, alphabet: :base58
 end
 
 defmodule MyCustomUUID do
   use ShortUUID.Builder, alphabet: "0123456789ABCDEF"
 end
 
-iex> MyCustomUUID.encode("550e8400-e29b-41d4-a716-446655440000")
-{:ok, "H9cNmGXLEc8NWcZzSThA9S"}
+iex> MyBase58UUID.encode("550e8400-e29b-41d4-a716-446655440000")
+{:ok, "BWBeN28Vb7cMEx7Ym8AUzs"}
 
-iex> MyCustomUUID.decode("H9cNmGXLEc8NWcZzSThA9S")
+iex> MyBase58UUID.decode("BWBeN28Vb7cMEx7Ym8AUzs")
 {:ok, "550e8400-e29b-41d4-a716-446655440000"}
 ```
 
