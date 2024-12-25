@@ -19,7 +19,25 @@ defmodule ShortUUID.Core do
 
   import Bitwise
 
-  @doc false
+  @type uuid_string :: String.t()
+  @type normalized_uuid :: String.t()
+  @type short_uuid :: String.t()
+
+  @spec parse_uuid(String.t()) :: {:ok, normalized_uuid} | {:error, String.t()}
+  @doc """
+  Parses and normalizes various UUID string formats.
+
+  ## Examples
+
+      iex> ShortUUID.Core.parse_uuid("550e8400-e29b-41d4-a716-446655440000")
+      {:ok, "550e8400e29b41d4a716446655440000"}
+
+      iex> ShortUUID.Core.parse_uuid("{550e8400-e29b-41d4-a716-446655440000}")
+      {:ok, "550e8400e29b41d4a716446655440000"}
+
+      iex> ShortUUID.Core.parse_uuid("not-a-uuid")
+      {:error, "Invalid UUID"}
+  """
   def parse_uuid(
         <<a::binary-size(8), ?-, b::binary-size(4), ?-, c::binary-size(4), ?-, d::binary-size(4),
           ?-, e::binary-size(12)>>
@@ -36,70 +54,37 @@ defmodule ShortUUID.Core do
 
   def parse_uuid(_), do: {:error, "Invalid UUID"}
 
-  @doc false
-  def encode_binary(
-        <<a::binary-size(8), ?-, b::binary-size(4), ?-, c::binary-size(4), ?-, d::binary-size(4),
-          ?-, e::binary-size(12)>>,
-        base,
-        alphabet_tuple,
-        encoded_length,
-        padding
-      ) do
-    encode_uuid_string(
-      <<a::binary-size(8), b::binary-size(4), c::binary-size(4), d::binary-size(4),
-        e::binary-size(12)>>,
-      base,
-      alphabet_tuple,
-      encoded_length,
-      padding
-    )
-  end
+  @spec encode_binary(uuid_string, pos_integer, tuple, pos_integer, String.t()) ::
+          {:ok, short_uuid} | {:error, String.t()}
+  @doc """
+  Encodes a UUID string into a shorter string using the specified alphabet and base.
+  Takes a UUID string, base number, alphabet tuple, desired length, and padding character.
 
-  def encode_binary(<<_::binary-size(32)>> = uuid, base, alphabet_tuple, encoded_length, padding) do
-    encode_uuid_string(uuid, base, alphabet_tuple, encoded_length, padding)
-  end
+  ## Examples
 
-  def encode_binary(
-        <<?{, a::binary-size(8), ?-, b::binary-size(4), ?-, c::binary-size(4), ?-,
-          d::binary-size(4), ?-, e::binary-size(12), ?}>>,
-        base,
-        alphabet_tuple,
-        encoded_length,
-        padding
-      ) do
-    encode_uuid_string(
-      <<a::binary-size(8), b::binary-size(4), c::binary-size(4), d::binary-size(4),
-        e::binary-size(12)>>,
-      base,
-      alphabet_tuple,
-      encoded_length,
-      padding
-    )
-  end
+      iex> alphabet = String.graphemes("123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz") |> List.to_tuple()
+      iex> ShortUUID.Core.encode_binary("550e8400-e29b-41d4-a716-446655440000", 58, alphabet, 22, "1")
+      {:ok, "BWBeN28Vb7cMEx7Ym8AUzs"}
 
-  def encode_binary(
-        <<?{, uuid::binary-size(32), ?}>>,
-        base,
-        alphabet_tuple,
-        encoded_length,
-        padding
-      ) do
-    encode_uuid_string(<<uuid::binary-size(32)>>, base, alphabet_tuple, encoded_length, padding)
-  end
-
-  def encode_binary(_, _, _, _, _), do: {:error, "Invalid UUID"}
-
-  defp encode_uuid_string(uuid, base, alphabet_tuple, encoded_length, padding) do
-    case Base.decode16(uuid, case: :mixed) do
-      {:ok, decoded_uuid} ->
-        encode_int(decoded_uuid, base, alphabet_tuple, encoded_length, padding)
-
-      _ ->
-        {:error, "Invalid UUID"}
+      iex> alphabet = String.graphemes("123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz") |> List.to_tuple()
+      iex> ShortUUID.Core.encode_binary("invalid", 58, alphabet, 22, "1")
+      {:error, "Invalid UUID"}
+  """
+  def encode_binary(input, base, alphabet_tuple, encoded_length, padding) do
+    with {:ok, bin_uuid} <- parse_uuid(input),
+         {:ok, decoded} <- Base.decode16(bin_uuid, case: :mixed) do
+      encode_int(decoded, base, alphabet_tuple, encoded_length, padding)
+    else
+      _ -> {:error, "Invalid UUID"}
     end
   end
 
-  @doc false
+  @spec encode_int(binary, pos_integer, tuple, pos_integer, String.t()) ::
+          {:ok, short_uuid} | {:error, String.t()}
+  @doc """
+  Encodes a 128-bit integer into a string using the specified base and alphabet.
+  Pads the result to the desired length using the padding character.
+  """
   def encode_int(<<int_value::128>>, base, alphabet_tuple, encoded_length, padding_char) do
     encoded =
       int_to_string(int_value, base, alphabet_tuple)
@@ -117,7 +102,22 @@ defmodule ShortUUID.Core do
     String.duplicate(to_string(padding_char), max(0, padding_length)) <> string
   end
 
-  @doc false
+  @spec decode_string(String.t(), pos_integer, map, pos_integer) ::
+          {:ok, uuid_string} | {:error, String.t()}
+  @doc """
+  Decodes a shortened string back into a UUID using the specified base and alphabet.
+  Validates the input length and ensures the decoded value is within valid UUID range.
+
+  ## Examples
+
+      iex> alphabet = String.graphemes("123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz") |> Enum.with_index() |> Map.new()
+      iex> ShortUUID.Core.decode_string("BWBeN28Vb7cMEx7Ym8AUzs", 58, alphabet, 22)
+      {:ok, "550e8400-e29b-41d4-a716-446655440000"}
+
+      iex> alphabet = String.graphemes("123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz") |> Enum.with_index() |> Map.new()
+      iex> ShortUUID.Core.decode_string("invalid", 58, alphabet, 22)
+      {:error, "Invalid input"}
+  """
   def decode_string(string, base, codepoint_index, encoded_length) when is_binary(string) do
     with true <- String.length(string) == encoded_length,
          {:ok, value} <- decode_to_int(string, base, codepoint_index),
@@ -131,7 +131,16 @@ defmodule ShortUUID.Core do
 
   def decode_string(_, _, _, _), do: {:error, "Invalid input"}
 
-  @doc false
+  @spec format_uuid(non_neg_integer) :: uuid_string
+  @doc """
+  Formats a 128-bit integer as a standard UUID string with dashes.
+  Converts the integer to a 32-character hex string and inserts dashes in the correct positions.
+
+  ## Examples
+
+      iex> ShortUUID.Core.format_uuid(0x550e8400e29b41d4a716446655440000)
+      "550e8400-e29b-41d4-a716-446655440000"
+  """
   def format_uuid(int_value) when is_integer(int_value) do
     <<int_value::128>>
     |> Base.encode16(case: :lower)
@@ -145,6 +154,8 @@ defmodule ShortUUID.Core do
     a <> "-" <> b <> "-" <> c <> "-" <> d <> "-" <> e
   end
 
+  # Decodes a string into its integer representation using the specified base and alphabet.
+  # Returns an error if any character in the string is not in the alphabet.
   defp decode_to_int(string, base, codepoint_index) do
     string
     |> String.graphemes()
@@ -157,6 +168,8 @@ defmodule ShortUUID.Core do
     end)
   end
 
+  # Converts an integer to a string using the specified base and alphabet.
+  # Uses tail recursion with an accumulator for efficiency.
   defp int_to_string(number, base, alphabet_tuple, acc \\ [])
   defp int_to_string(0, _, _, acc), do: to_string(acc)
 

@@ -62,12 +62,7 @@ defmodule ShortUUID.Builder do
     alphabet_expr = Keyword.fetch!(opts, :alphabet)
     expanded_alphabet = Macro.expand(alphabet_expr, __CALLER__)
 
-    unless is_atom(expanded_alphabet) or is_binary(expanded_alphabet) do
-      raise ArgumentError,
-            "Alphabet must be a literal string or supported atom, got: #{Macro.to_string(alphabet_expr)}"
-    end
-
-    validated_alphabet = validate_compile_time_alphabet!(expanded_alphabet)
+    validated_alphabet = validate_alphabet!(expanded_alphabet)
     base = String.length(validated_alphabet)
     encoded_length = ceil(:math.log(2 ** 128) / :math.log(base))
     padding_char = String.first(validated_alphabet)
@@ -83,9 +78,11 @@ defmodule ShortUUID.Builder do
       @base String.length(@alphabet)
       @encoded_length unquote(encoded_length)
 
+      @spec encode(String.t()) :: {:ok, String.t()} | {:error, String.t()}
       def encode(uuid),
         do: Core.encode_binary(uuid, @base, @alphabet_tuple, @encoded_length, @padding_char)
 
+      @spec encode!(String.t()) :: String.t() | no_return()
       def encode!(uuid) do
         case encode(uuid) do
           {:ok, encoded} -> encoded
@@ -93,9 +90,11 @@ defmodule ShortUUID.Builder do
         end
       end
 
+      @spec decode(String.t()) :: {:ok, String.t()} | {:error, String.t()}
       def decode(string),
         do: Core.decode_string(string, @base, @codepoint_index, @encoded_length)
 
+      @spec decode!(String.t()) :: String.t() | no_return()
       def decode!(string) do
         case decode(string) do
           {:ok, decoded} -> decoded
@@ -105,41 +104,35 @@ defmodule ShortUUID.Builder do
     end
   end
 
-  defp validate_compile_time_alphabet!(alphabet) when is_atom(alphabet) do
+  defp validate_alphabet!(alphabet) when is_atom(alphabet) do
     predefined = Map.get(@predefined_alphabets, alphabet)
 
-    if predefined do
-      predefined
-    else
-      raise ArgumentError, "Unknown alphabet atom: #{inspect(alphabet)}"
-    end
-  end
-
-  defp validate_compile_time_alphabet!(alphabet) when is_binary(alphabet) do
-    validate_alphabet!(alphabet)
-  end
-
-  defp validate_compile_time_alphabet!(other) do
-    raise ArgumentError,
-          "Alphabet must be a known atom or string, got: #{inspect(other)}"
+    if is_nil(predefined),
+      do: raise(ArgumentError, "Unknown alphabet atom: #{inspect(alphabet)}"),
+      else: predefined
   end
 
   defp validate_alphabet!(alphabet) when is_binary(alphabet) do
     graphemes = String.graphemes(alphabet)
 
-    cond do
-      length(graphemes) < 16 ->
-        raise ArgumentError, message: "Alphabet must contain at least 16 characters"
-
-      length(graphemes) > @max_alphabet_length ->
-        raise ArgumentError,
-          message: "Alphabet must not contain more than #{@max_alphabet_length} characters"
-
-      length(Enum.uniq(graphemes)) != length(graphemes) ->
-        raise ArgumentError, message: "Alphabet must not contain duplicate characters"
-
-      true ->
-        alphabet
+    if length(graphemes) < 16 do
+      raise ArgumentError, "Alphabet must contain at least 16 characters"
     end
+
+    if length(graphemes) > @max_alphabet_length do
+      raise ArgumentError,
+            "Alphabet must not contain more than #{@max_alphabet_length} characters"
+    end
+
+    if length(Enum.uniq(graphemes)) != length(graphemes) do
+      raise ArgumentError, "Alphabet must not contain duplicate characters"
+    end
+
+    alphabet
+  end
+
+  defp validate_alphabet!(other) do
+    raise ArgumentError,
+          "Alphabet must be a literal string or supported atom, got: #{inspect(other)}"
   end
 end

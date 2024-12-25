@@ -1,5 +1,6 @@
 defmodule ShortUUID.CoreTest do
   use ExUnit.Case, async: true
+  doctest ShortUUID.Core
 
   alias ShortUUID.Core
 

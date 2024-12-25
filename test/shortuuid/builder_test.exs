@@ -1,6 +1,7 @@
 defmodule ShortUUID.BuilderTest do
   use ExUnit.Case, async: true
   use ExUnitProperties
+  doctest ShortUUID.Builder
 
   import ShortUUID.TestGenerators
   import StreamData
@@ -108,7 +109,7 @@ defmodule ShortUUID.BuilderTest do
                    "Alphabet must be a literal string or supported atom, got: 12345",
                    fn ->
                      defmodule InvalidType do
-                       use ShortUUID.Builder, alphabet: 12345
+                       use ShortUUID.Builder, alphabet: 12_345
                      end
                    end
 
