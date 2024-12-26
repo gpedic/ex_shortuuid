@@ -93,6 +93,12 @@ defmodule ShortUUID.BuilderTest do
 
   describe "validation" do
     test "rejects invalid alphabets" do
+      assert_raise ArgumentError, "Unknown alphabet atom: :not_an_alphabet", fn ->
+        defmodule UnknownAlphabet do
+          use ShortUUID.Builder, alphabet: :not_an_alphabet
+        end
+      end
+
       assert_raise ArgumentError, "Alphabet must contain at least 16 characters", fn ->
         defmodule TooShortAlphabet do
           use ShortUUID.Builder, alphabet: "abc"
