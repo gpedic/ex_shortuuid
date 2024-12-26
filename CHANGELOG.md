@@ -5,7 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## v4.0.0 (25.12.2024)
+
+Breaking changes:
+* Dropped support for binary UUID input
+
+### Added
+* Support for custom alphabets
+* Predefined alphabets (base32, base58, base62, base64, etc.)
+* `ShortUUID.Builder` module for creating custom ShortUUID modules
+
+### Changed
+* Moved core functionality to `ShortUUID.Core`
+* Simplified main `ShortUUID` module interface
+* Improved error messages and validation
+
+```elixir
+# Old v3.x code still works, the ShortUUID module uses the same alphabet as in V3
+# If you just want to keep using ShortUUID no changes are required
+ShortUUID.encode(uuid)
+
+# New in v4.x you can define use one of a list of predefined alphabets or define your own
+defmodule MyUUID do
+  use ShortUUID.Builder, alphabet: :base58
+end
+
+MyUUID.encode(uuid)
+
+defmodule MyCustomUUID do
+  use ShortUUID.Builder, alphabet: "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
+end
+
+MyCustomUUID.encode(uuid)
+```
+
+## [Released]
 
 ## v3.0.0 (15.07.2023)
 

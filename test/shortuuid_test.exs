@@ -3,7 +3,10 @@ defmodule ShortUUIDTest do
   use ExUnitProperties
   doctest ShortUUID
 
+  import ShortUUID.TestGenerators
+
   @niluuid "00000000-0000-0000-0000-000000000000"
+  @base57_alphabet "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 
   describe "encode/1" do
     test "should pad shorter ints" do
@@ -73,40 +76,35 @@ defmodule ShortUUIDTest do
       assert {:error, "Invalid UUID"} = ShortUUID.encode("2Ä162ee502f447019e8772762cbce5e2")
     end
 
-    test "encode binary UUIDs" do
-      assert {:ok, "nZJHSqgNVBBSX2h6sRUQuP"} =
+    test "rejects binary input" do
+      # Remove accepting binary input tests and replace with rejection tests
+      assert {:error, "Invalid UUID"} =
                ShortUUID.encode(
                  <<250, 98, 175, 128, 168, 97, 69, 108, 171, 119, 213, 103, 126, 46, 139, 168>>
                )
 
-      assert {:ok, "9VprZJ9U7Tgg2PJ8BfTAek"} =
+      assert {:error, "Invalid UUID"} =
                ShortUUID.encode(
-                 <<0x2A, 0x16, 0x2E, 0xE5, 0x02, 0xF4, 0x47, 0x01, 0x9E, 0x87, 0x72, 0x76, 0x2C,
-                   0xBC, 0xE5, 0xE2>>
-               )
-
-      assert "9VprZJ9U7Tgg2PJ8BfTAek" =
-               ShortUUID.encode!(
                  <<0x2A, 0x16, 0x2E, 0xE5, 0x02, 0xF4, 0x47, 0x01, 0x9E, 0x87, 0x72, 0x76, 0x2C,
                    0xBC, 0xE5, 0xE2>>
                )
 
       # min
-      assert {:ok, "2222222222222222222222"} =
+      assert {:error, "Invalid UUID"} =
                ShortUUID.encode(<<0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0>>)
 
       # max
-      assert {:ok, "oZEq7ovRbLq6UnGMPwc8B5"} =
+      assert {:error, "Invalid UUID"} =
                ShortUUID.encode(
                  <<255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
                    255>>
                )
 
       # more than 128 bit
-      assert {:error, _} = ShortUUID.encode(<<1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0>>)
+      assert {:error, "Invalid UUID"} = ShortUUID.encode(<<1::size(136)>>)
 
       # less than 128 bit
-      assert {:error, _} = ShortUUID.encode(<<1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0>>)
+      assert {:error, "Invalid UUID"} = ShortUUID.encode(<<1::size(120)>>)
     end
   end
 
@@ -198,41 +196,85 @@ defmodule ShortUUIDTest do
     assert uuid == uuid2
   end
 
-  # Test the encoding and decoding functionality of ShortUUID.
-  property "uuid encoding and decoding (there and back again)" do
+  # Update property test syntax
+  @tag property: true
+  test "uuid encoding and decoding (there and back again)", %{property: true} do
     check all(uuid <- uuid_generator()) do
       assert {:ok, encoded_uuid} = ShortUUID.encode(uuid)
       assert {:ok, decoded_uuid} = ShortUUID.decode(encoded_uuid)
-
       assert normalize(uuid) == decoded_uuid
     end
   end
 
-  property "binary UUID encoding" do
+  @tag property: true
+  test "rejects all binary input", %{property: true} do
     check all(binary <- random_binary_uuid()) do
-      {:ok, _} = ShortUUID.encode(binary)
+      assert {:error, "Invalid UUID"} = ShortUUID.encode(binary)
     end
   end
 
-  # Generates a V4 UUID with a 50% chance of removing hyphens,
-  # randomly applies downcasing, upcasing, or capitalization.
-  def uuid_generator do
-    StreamData.map(StreamData.constant(:ok), fn _ ->
-      uuid = UUID.uuid4()
+  @tag property: true
+  test "encoded UUIDs maintain length invariant", %{property: true} do
+    check all(uuid <- uuid_generator()) do
+      {:ok, encoded} = ShortUUID.encode(uuid)
+      # base57 length should always be 22
+      assert String.length(encoded) == 22
 
-      uuid =
-        case :rand.uniform(3) do
-          1 -> uuid
-          2 -> String.replace(uuid, "-", "")
-          3 -> "{#{uuid}}"
-        end
+      # Special case: nil UUID (all zeros)
+      {:ok, encoded_nil} = ShortUUID.encode(@niluuid)
+      assert String.length(encoded_nil) == 22
+      # Should start with first char
+      assert String.starts_with?(encoded_nil, "2")
 
-      case :rand.uniform(3) do
-        1 -> String.downcase(uuid)
-        2 -> String.upcase(uuid)
-        3 -> String.capitalize(uuid)
-      end
-    end)
+      # Special case: max UUID (all ones)
+      {:ok, encoded_max} = ShortUUID.encode("ffffffff-ffff-ffff-ffff-ffffffffffff")
+      assert String.length(encoded_max) == 22
+    end
+  end
+
+  @tag property: true
+  test "encoded UUIDs only contain valid alphabet characters", %{property: true} do
+    check all(uuid <- uuid_generator()) do
+      {:ok, encoded} = ShortUUID.encode(uuid)
+      # Verify that every character in the encoded string is in our alphabet
+      assert encoded |> String.graphemes() |> Enum.all?(&String.contains?(@base57_alphabet, &1))
+    end
+  end
+
+  @tag property: true
+  test "decoded UUIDs always match UUID format", %{property: true} do
+    check all(uuid <- uuid_generator()) do
+      {:ok, encoded} = ShortUUID.encode(uuid)
+      {:ok, decoded} = ShortUUID.decode(encoded)
+
+      assert Regex.match?(
+               ~r/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+               decoded
+             )
+    end
+  end
+
+  @tag property: true
+  test "encoding maintains ordering of UUIDs", %{property: true} do
+    check all(
+            uuid1 <- uuid_generator(),
+            uuid2 <- uuid_generator()
+          ) do
+      {:ok, encoded1} = ShortUUID.encode(uuid1)
+      {:ok, encoded2} = ShortUUID.encode(uuid2)
+      normalized1 = normalize(uuid1)
+      normalized2 = normalize(uuid2)
+
+      # If UUIDs are ordered, their encodings should maintain that order
+      assert normalized1 <= normalized2 == encoded1 <= encoded2
+    end
+  end
+
+  @tag property: true
+  test "invalid UUIDs are rejected", %{property: true} do
+    check all(invalid <- invalid_uuid_generator()) do
+      assert {:error, _} = ShortUUID.encode(invalid)
+    end
   end
 
   defp normalize(uuid) do
@@ -243,9 +285,5 @@ defmodule ShortUUIDTest do
     |> String.downcase()
     # Add hyphens
     |> String.replace(~r/(.{8})(.{4})(.{4})(.{4})(.{12})/, "\\1-\\2-\\3-\\4-\\5")
-  end
-
-  def random_binary_uuid do
-    StreamData.binary(length: 16)
   end
 end

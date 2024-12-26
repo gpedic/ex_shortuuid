@@ -10,22 +10,39 @@
 
 <!-- MDOC !-->
 
-ShortUUID is a lightweight Elixir library that generates short and unique IDs for use in URLs. It provides a solution when you need IDs that are easy to use and understand for users.
+ShortUUID is a lightweight Elixir library for generating short, unique IDs in URLs. It turns standard UUIDs into smaller strings ideal for use in URLs.
+You can choose from a set of predefined alphabets or define your own. 
+The default alphabet includes lowercase letters, uppercase letters, and digits, omitting characters like 'l', '1', 'I', 'O', and '0' to keep them readable.
 
-Instead of using long and complex UUIDs, ShortUUID converts them into shorter strings using a combination of lowercase and uppercase letters, as well as digits. It avoids using similar-looking characters such as 'l', '1', 'I', 'O', and '0'.
+**Note:** Different ShortUUID implementations be compatible as long as they use the same alphabet. However, there is no official standard, so if you plan to use ShortUUID with other libraries, it's a good idea to research and test for compatibility.
 
-**Note:** It's worth noting that different ShortUUID implementations should work together if they use the same set of characters. However, there is no official standard, so if you plan to use ShortUUID with other libraries, it's a good idea to research and test for compatibility.
-
-Unlike some other libraries, ShortUUID doesn't generate UUIDs itself. Instead, you can input any valid UUID into the `ShortUUID.encode/1`. To generate UUIDs, you can use libraries like
+Unlike some other solutions, ShortUUID does not produce UUIDs on its own as there are already plenty of libraries to do so. To generate UUIDs, use libraries such as
 [Elixir UUID](https://github.com/zyro/elixir-uuid), [Erlang UUID](https://github.com/okeuday/uuid) and also [Ecto](https://hexdocs.pm/ecto/Ecto.UUID.html) as it can generate version 4 UUIDs.
 
-ShortUUID supports common UUID formats and is case-insensitive. It also supports binary UUIDs returned from DBs like PostgreSQL when the uuid type is used to store the UUID.
+ShortUUID supports common UUID formats and is case-insensitive.
 
 ## Compatibility
 
-Starting with version `v3.0.0`, this library will follow suit with changes in other language implementations and move the most significant bit of the encoded value to the start. This also means that padding will be applied to the end of the string, not the start
-This change will restore compatibility with other libraries like [shortuuid](https://github.com/skorokithakis/shortuuid) from v1.0.0 onwards and [short-uuid
-](https://github.com/oculus42/short-uuid).
+### v4.0.0 breaking changes
+
+Raw binary UUID input (as `<<...>>`) is no longer supported. UUIDs must be provided as strings in standard UUID format (`"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"`) or as 32-character hex strings without hyphens.
+
+Examples of supported formats:
+```elixir
+# Supported
+"550e8400-e29b-41d4-a716-446655440000"  # With hyphens
+"550e8400e29b41d4a716446655440000"      # Without hyphens
+
+# No longer supported in v4.0.0
+<<85, 14, 132, 0, 226, 155, 65, 212, 167, 22, 68, 102, 85, 68, 0, 0>>
+```
+
+### v3.0.0 breaking changes
+
+Changed bit order and padding behavior to align with other language implementations:
+- Most significant bits are now encoded first
+- Padding characters appear at the end of the string
+- Compatible with Python's [shortuuid](https://github.com/skorokithakis/shortuuid) v1.0.0+ and Node.js [short-uuid](https://github.com/oculus42/short-uuid)
 
 Before `v3.0.0`
 ```elixir
@@ -68,7 +85,7 @@ Add `:shortuuid` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:shortuuid, "~> 3.0"}
+    {:shortuuid, "~> 4.0"}
   ]
 end
 ```
@@ -95,6 +112,69 @@ If you would like to use ShortUUID with Ecto schemas try [Ecto.ShortUUID](https:
 
 It provides a custom Ecto type which allows for ShortUUID primary and foreign keys while staying compatible with `:binary_key` (`EctoUUID`).
 
+## Custom Alphabets
+
+Starting with version `v4.0.0`, ShortUUID allows you to define custom alphabets for encoding and decoding UUIDs. You can use predefined alphabets or define your own.
+
+### Restrictions
+
+- The alphabet must contain at least 16 unique characters.
+- The alphabet must not contain duplicate characters.
+
+### Predefined Alphabets
+
+Starting with version `v4.0.0`, the following predefined alphabets are available:
+
+- `:base57_shortuuid` - "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+- `:base32` - "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
+- `:base32_crockford` - "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
+- `:base32_hex` - "0123456789ABCDEFGHIJKLMNOPQRSTUV"
+- `:base32_z` - "ybndrfg8ejkmcpqxot1uwisza345h769"
+- `:base58` - "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+- `:base62` - "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+- `:base64` - "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+- `:base64_url` - "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+
+### Using a custom or predefined alphabet
+
+```elixir
+defmodule MyBase58UUID do
+  use ShortUUID.Builder, alphabet: :base58
+end
+
+defmodule MyCustomUUID do
+  use ShortUUID.Builder, alphabet: "0123456789ABCDEF"
+end
+
+iex> MyBase58UUID.encode("550e8400-e29b-41d4-a716-446655440000")
+{:ok, "BWBeN28Vb7cMEx7Ym8AUzs"}
+
+iex> MyBase58UUID.decode("BWBeN28Vb7cMEx7Ym8AUzs")
+{:ok, "550e8400-e29b-41d4-a716-446655440000"}
+```
+
+### Just for fun
+
+Since v4.0.0 alphabets are not limited to alphanumeric characters either
+
+```elixir
+defmodule UnicodeUUID do
+  use ShortUUID.Builder, alphabet: "🌟💫✨⭐️🌙🌎🌍🌏🌑🌒🌓🌔🌕🌖🌗🌘"
+end
+
+iex> UnicodeUUID.encode("550e8400-e29b-41d4-a716-446655440000")
+{:ok, "🌎🌎🌟🌗🌑🌙🌟🌟🌗✨🌒🌔🌙💫🌖🌙🌓🌏💫🌍🌙🌙🌍🌍🌎🌎🌙🌙🌟🌟🌟🌟"}
+
+
+defmodule SmileyUUID do
+  use ShortUUID.Builder, alphabet: "😀😊😄😍🥰😘😜🤪😋🤔😌🧐😐😑😶😮😲😱😴🥱😪😢😭😤😎🤓😇😈👻👽🤖🤡💀"
+end
+
+iex> SmileyUUID.encode("550e8400-e29b-41d4-a716-446655440000")
+{:ok, "😊🤪😢😘💀🥰😲😊🤡🤖🤔😊😘😤👽🤓👻😊👽😲😋😀😭😇😲🤖"}
+
+```
+
 ## Documentation
 
 Look up the full documentation at [https://hexdocs.pm/shortuuid](https://hexdocs.pm/shortuuid).
@@ -105,7 +185,7 @@ Inspired by [shortuuid](https://github.com/skorokithakis/shortuuid).
 
 ## Copyright and License
 
-Copyright (c) 2019 Goran Pedić
+Copyright (c) 2024 Goran Pedić
 
 This work is free. You can redistribute it and/or modify it under the
 terms of the MIT License. 
