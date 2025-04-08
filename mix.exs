@@ -2,7 +2,7 @@ defmodule ShortUUID.Mixfile do
   use Mix.Project
 
   @name "ShortUUID"
-  @version "4.0.0"
+  @version "4.1.0"
   @url "https://github.com/gpedic/ex_shortuuid"
 
   def project do
