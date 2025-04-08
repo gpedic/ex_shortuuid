@@ -18,6 +18,7 @@ defmodule ShortUUID do
       {:ok, "550e8400-e29b-41d4-a716-446655440000"}
 
   For custom alphabets and more options, see `ShortUUID.Builder`.
+  To implement your own compatible ShortUUID module, use `ShortUUID.Behaviour`.
   """
   use ShortUUID.Builder, alphabet: :base57_shortuuid
 end

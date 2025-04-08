@@ -70,6 +70,7 @@ defmodule ShortUUID.Builder do
     quote do
       import Bitwise
       alias ShortUUID.Core
+      @behaviour ShortUUID.Behaviour
 
       @alphabet unquote(validated_alphabet)
       @padding_char unquote(padding_char)
