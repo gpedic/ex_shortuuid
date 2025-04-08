@@ -175,6 +175,57 @@ iex> SmileyUUID.encode("550e8400-e29b-41d4-a716-446655440000")
 
 ```
 
+## Implementing Compatible Modules
+
+Starting with version `v4.1.0`, ShortUUID provides a behavior that you can implement to create compatible modules. 
+This is useful if you want to create your own ShortUUID-compatible module with custom functionality while maintaining a consistent interface.
+
+```elixir
+defmodule MyCustomShortUUID do
+  @behaviour ShortUUID.Behaviour
+
+  @spec encode(String.t()) :: {:ok, String.t()} | {:error, String.t()}
+  def encode(uuid) do
+    # Your custom implementation here
+    {:ok, "encoded_" <> uuid}
+  end
+
+  @spec encode!(String.t()) :: String.t() | no_return()
+  def encode!(uuid) do
+    case encode(uuid) do
+      {:ok, encoded} -> encoded
+      {:error, msg} -> raise ArgumentError, message: msg
+    end
+  end
+
+  @spec decode(String.t()) :: {:ok, String.t()} | {:error, String.t()}
+  def decode(encoded) do
+    # Your custom implementation here
+    if String.starts_with?(encoded, "encoded_") do
+      {:ok, String.replace_prefix(encoded, "encoded_", "")}
+    else
+      {:error, "Invalid format"}
+    end
+  end
+
+  @spec decode!(String.t()) :: String.t() | no_return()
+  def decode!(encoded) do
+    case decode(encoded) do
+      {:ok, decoded} -> decoded
+      {:error, msg} -> raise ArgumentError, message: msg
+    end
+  end
+end
+```
+
+The `ShortUUID.Behaviour` requires implementing four callbacks:
+- `encode/1` - Encode a UUID into a shorter representation
+- `encode!/1` - Same as encode/1 but raises on error
+- `decode/1` - Decode a shortened UUID back to standard format
+- `decode!/1` - Same as decode/1 but raises on error
+
+Using this behavior ensures that your custom implementation will be compatible with code expecting a ShortUUID-compatible module.
+
 ## Documentation
 
 Look up the full documentation at [https://hexdocs.pm/shortuuid](https://hexdocs.pm/shortuuid).
