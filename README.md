@@ -1,14 +1,12 @@
 # ShortUUID
 
-![Build Status](https://github.com/gpedic/ex_shortuuid/actions/workflows/ci.yml/badge.svg?branch=master)
+[![Build Status](https://github.com/gpedic/ex_shortuuid/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/gpedic/ex_shortuuid/actions/workflows/ci.yml)
 [![Coverage Status](https://coveralls.io/repos/github/gpedic/ex_shortuuid/badge.svg)](https://coveralls.io/github/gpedic/ex_shortuuid)
 [![Module Version](https://img.shields.io/hexpm/v/shortuuid.svg)](https://hex.pm/packages/shortuuid)
 [![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/shortuuid/)
 [![Total Download](https://img.shields.io/hexpm/dt/shortuuid.svg)](https://hex.pm/packages/shortuuid)
 [![License](https://img.shields.io/hexpm/l/shortuuid.svg)](https://github.com/gpedic/ex_shortuuid/blob/master/LICENSE.md)
-[![Last Updated](https://img.shields.io/github/last-commit/gpedic/shortuuid.svg)](https://github.com/gpedic/ex_shortuuid/commits/master)
-
-<!-- MDOC !-->
+[![Last Updated](https://img.shields.io/github/last-commit/gpedic/ex_shortuuid.svg)](https://github.com/gpedic/ex_shortuuid/commits/master)
 
 ShortUUID is a lightweight Elixir library that turns standard UUIDs into shorter strings, for example for use in URLs.
 You can choose from a set of predefined alphabets or define your own.
@@ -19,7 +17,7 @@ Not every alphabet is URL-safe: `:base64` and custom alphabets may contain chara
 **Note:** Different ShortUUID implementations are compatible as long as they use the same alphabet in the same order. There is no official standard, so if you plan to use ShortUUID with other libraries, test for compatibility. See [Compatibility with other implementations](#compatibility-with-other-implementations).
 
 Unlike some other solutions, ShortUUID does not produce UUIDs on its own as there are already plenty of libraries to do so. To generate UUIDs, use libraries such as
-[Elixir UUID](https://github.com/zyro/elixir-uuid), [Erlang UUID](https://github.com/okeuday/uuid) and also [Ecto](https://hexdocs.pm/ecto/Ecto.UUID.html) as it can generate version 4 UUIDs.
+[Uniq](https://hex.pm/packages/uniq) (including version 7 UUIDs), [Erlang UUID](https://github.com/okeuday/uuid) or [Ecto](https://hexdocs.pm/ecto/Ecto.UUID.html), which can generate version 4 UUIDs.
 
 ShortUUID accepts common UUID formats in any letter case, since UUIDs are case-insensitive:
 
@@ -54,11 +52,11 @@ A mismatch is silent: the ID decodes to a different, valid UUID instead of faili
 
 ShortUUID is also stricter than both: it rejects IDs that are not exactly the encoded length or that are out of the 128-bit range, where the other libraries may return a UUID.
 
-These results are checked by tests against fixtures generated with pinned versions of both libraries, see [`scripts/compat`](scripts/compat/README.md).
+These results are checked by tests against fixtures generated with pinned versions of both libraries, see [`scripts/compat`](https://github.com/gpedic/ex_shortuuid/tree/master/scripts/compat).
 
 ### v4.0.0 breaking changes
 
-Raw binary UUID input (as `<<...>>`) is no longer supported. UUIDs must be provided as strings in standard UUID format (`"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"`) or as 32-character hex strings without hyphens.
+Raw binary UUID input (as `<<...>>`) is no longer supported. UUIDs must be provided as strings, in one of the formats listed at the top of this page.
 
 Examples of supported formats:
 ```elixir
@@ -145,7 +143,7 @@ iex> "nQtAWSRQ6ByybDtRs7dQwE" |> ShortUUID.decode!
 
 If you would like to use ShortUUID with Ecto schemas try [Ecto.ShortUUID](https://github.com/gpedic/ecto_shortuuid).
 
-It provides a custom Ecto type which allows for ShortUUID primary and foreign keys while staying compatible with `:binary_key` (`EctoUUID`).
+It provides a custom Ecto type which allows for ShortUUID primary and foreign keys while staying compatible with `:binary_id` (`Ecto.UUID`).
 
 ## Custom Alphabets
 
@@ -232,7 +230,7 @@ iex> SmileyUUID.encode("550e8400-e29b-41d4-a716-446655440000")
 
 ## Implementing Compatible Modules
 
-Starting with version `v4.1.0`, ShortUUID provides a behavior that you can implement to create compatible modules. 
+Starting with version `v4.1.0`, ShortUUID provides a behaviour that you can implement to create compatible modules.
 This is useful if you want to create your own ShortUUID-compatible module with custom functionality while maintaining a consistent interface.
 
 ```elixir
@@ -279,7 +277,7 @@ The `ShortUUID.Behaviour` requires implementing four callbacks:
 - `decode/1` - Decode a shortened UUID back to standard format
 - `decode!/1` - Same as decode/1 but raises on error
 
-Using this behavior ensures that your custom implementation will be compatible with code expecting a ShortUUID-compatible module.
+Using this behaviour ensures that your custom implementation will be compatible with code expecting a ShortUUID-compatible module.
 
 ## Documentation
 
@@ -294,6 +292,6 @@ Inspired by [shortuuid](https://github.com/skorokithakis/shortuuid).
 Copyright (c) 2024 Goran Pedić
 
 This work is free. You can redistribute it and/or modify it under the
-terms of the MIT License. 
+terms of the MIT License.
 
 See the [LICENSE.md](./LICENSE.md) file for more details.

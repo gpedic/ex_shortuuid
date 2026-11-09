@@ -31,7 +31,9 @@ defmodule ShortUUID.Core do
 
   @spec parse_uuid(String.t()) :: {:ok, normalized_uuid} | {:error, String.t()}
   @doc """
-  Parses and normalizes various UUID string formats.
+  Parses the supported UUID string formats (with or without hyphens, in curly
+  braces or with a `urn:uuid:` prefix) into 32 hex digits without separators.
+  The letter case of the hex digits is preserved.
 
   ## Examples
 
