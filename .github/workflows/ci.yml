@@ -2,39 +2,121 @@ name: Elixir CI
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
-    runs-on: ubuntu-22.04
-    name: OTP ${{matrix.otp}} / Elixir ${{matrix.elixir}}
+    runs-on: ubuntu-24.04
+    name: Test (Elixir ${{ matrix.elixir }} / OTP ${{ matrix.otp }})
     strategy:
+      fail-fast: false
       matrix:
-        elixir: ["1.14", "1.15", "1.16"]
-        otp: ["25.3.2.3"]
+        include:
+          # Oldest supported Elixir (see `elixir:` in mix.exs)
+          - elixir: "1.15"
+            otp: "26"
+          - elixir: "1.17"
+            otp: "27"
+          - elixir: "1.19"
+            otp: "28"
+          # Latest, matches .tool-versions; coverage is reported from here
+          - elixir: "1.20.5"
+            otp: "29.1.2"
+            coverage: true
     env:
       MIX_ENV: test
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-    - name: Setup elixir
-      uses: erlef/setup-beam@v1
-      with:
-        elixir-version: ${{ matrix.elixir }}
-        otp-version: ${{ matrix.otp }}
+      - name: Set up Elixir
+        uses: erlef/setup-beam@54075bcc5e249e4758d363f27d099f55d843f124 # v1.24.1
+        with:
+          elixir-version: ${{ matrix.elixir }}
+          otp-version: ${{ matrix.otp }}
 
-    - name: Install Dependencies
-      run: mix deps.get
+      - name: Cache deps and build
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            deps
+            _build
+          key: test-${{ runner.os }}-${{ matrix.elixir }}-${{ matrix.otp }}-${{ hashFiles('mix.lock') }}
 
-    - name: Validate Formatting
-      run: mix format --check-formatted
+      - name: Install dependencies
+        run: mix deps.get
 
-    - name: Run Credo
-      run: mix credo --strict
+      - name: Compile
+        run: mix compile --warnings-as-errors
 
-    - name: Run Tests
-      run: MIX_ENV=test mix coveralls.github
+      - name: Run tests
+        if: ${{ !matrix.coverage }}
+        run: mix test --warnings-as-errors
+
+      - name: Run tests with coverage
+        if: ${{ matrix.coverage }}
+        run: mix coveralls.github --warnings-as-errors
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  lint:
+    runs-on: ubuntu-24.04
+    name: Lint, Dialyzer and docs
+    env:
+      MIX_ENV: dev
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Elixir
+        id: beam
+        uses: erlef/setup-beam@54075bcc5e249e4758d363f27d099f55d843f124 # v1.24.1
+        with:
+          version-file: .tool-versions
+          version-type: strict
+
+      - name: Cache deps, build and PLTs
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            deps
+            _build
+            priv/plts
+          key: lint-${{ runner.os }}-${{ steps.beam.outputs.elixir-version }}-${{ steps.beam.outputs.otp-version }}-${{ hashFiles('mix.lock') }}
+
+      - name: Install dependencies
+        run: mix deps.get
+
+      - name: Check for unused dependencies in mix.lock
+        run: mix deps.unlock --check-unused
+
+      - name: Check for retired Hex packages
+        run: mix hex.audit
+
+      - name: Check formatting
+        run: mix format --check-formatted
+
+      - name: Compile
+        run: mix compile --warnings-as-errors
+
+      - name: Run Credo
+        run: mix credo --strict
+
+      - name: Run Dialyzer
+        run: mix dialyzer --format github
+
+      - name: Build docs
+        run: mix docs --warnings-as-errors
