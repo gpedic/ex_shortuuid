@@ -27,7 +27,8 @@ defmodule ShortUUID.Core do
   @type normalized_uuid :: String.t()
   @type short_uuid :: String.t()
   @typedoc "Lookup structure built by `build_decode_index/1`; treat it as opaque."
-  @type decode_index :: {:shortuuid_decode_index, map, pos_integer}
+  @type decode_index ::
+          {:shortuuid_decode_index, map, pos_integer} | {:shortuuid_ascii_index, tuple}
 
   @spec parse_uuid(String.t()) :: {:ok, normalized_uuid} | {:error, String.t()}
   @doc """
@@ -127,8 +128,35 @@ defmodule ShortUUID.Core do
 
   No symbol may be a prefix of another symbol (compared by codepoints), otherwise
   an `ArgumentError` is raised.
+
+  If every symbol is a single ASCII character, the index is a byte lookup table,
+  which decodes faster. Input is then rejected as soon as a byte is not one of the
+  symbols; every byte of a non-ASCII character is 128 or higher, so it can never
+  match.
   """
   def build_decode_index([_ | _] = symbols) do
+    if Enum.all?(symbols, &ascii_char?/1),
+      do: build_ascii_index(symbols),
+      else: build_trie_index(symbols)
+  end
+
+  defp ascii_char?(<<char>>) when char < 128, do: true
+  defp ascii_char?(_), do: false
+
+  defp build_ascii_index(symbols) do
+    table =
+      symbols
+      |> Enum.with_index()
+      |> Enum.reduce(:erlang.make_tuple(256, nil), fn {<<char>> = symbol, value}, table ->
+        if elem(table, char) == nil,
+          do: put_elem(table, char, value),
+          else: raise_prefix_error(symbol)
+      end)
+
+    {:shortuuid_ascii_index, table}
+  end
+
+  defp build_trie_index(symbols) do
     trie =
       symbols
       |> Enum.with_index()
@@ -197,6 +225,17 @@ defmodule ShortUUID.Core do
     end
   end
 
+  def decode_string(string, base, {:shortuuid_ascii_index, table}, encoded_length)
+      when is_binary(string) do
+    with true <- byte_size(string) == encoded_length,
+         {:ok, value} <- decode_bytes(string, table, base, 0),
+         true <- value >>> 128 == 0 do
+      {:ok, format_uuid(value)}
+    else
+      _ -> {:error, "Invalid input"}
+    end
+  end
+
   def decode_string(string, base, %{} = symbol_index, encoded_length) when is_binary(string) do
     index =
       symbol_index
@@ -256,6 +295,16 @@ defmodule ShortUUID.Core do
   end
 
   defp decode_symbols(_string, _trie, _node, _base, _acc, _count, _max_count), do: :error
+
+  # One byte per symbol; bytes that are not a symbol map to nil.
+  defp decode_bytes(<<>>, _table, _base, acc), do: {:ok, acc}
+
+  defp decode_bytes(<<byte, rest::binary>>, table, base, acc) do
+    case elem(table, byte) do
+      nil -> :error
+      value -> decode_bytes(rest, table, base, acc * base + value)
+    end
+  end
 
   # Converts an integer to a list of alphabet symbols (most significant first)
   # and counts them.

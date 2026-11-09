@@ -149,6 +149,8 @@ It provides a custom Ecto type which allows for ShortUUID primary and foreign ke
 
 Starting with version `v4.0.0`, ShortUUID allows you to define custom alphabets for encoding and decoding UUIDs. You can use predefined alphabets or define your own.
 
+Alphabets made only of ASCII characters, like all the predefined ones, decode about 25% faster than alphabets with other characters, because they can be decoded byte by byte (`mix run bench/decode.exs`).
+
 ### Restrictions
 
 - The alphabet must contain at least 16 unique characters.

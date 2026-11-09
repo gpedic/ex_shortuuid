@@ -1,5 +1,6 @@
 defmodule ShortUUID.CoreTest do
   use ExUnit.Case, async: true
+  use ExUnitProperties
   doctest ShortUUID.Core
 
   alias ShortUUID.Core
@@ -224,6 +225,128 @@ defmodule ShortUUID.CoreTest do
 
       assert {:error, "Invalid UUID"} =
                Core.encode_int(<<1::64>>, @test_base, @test_tuple, @test_length, @test_zero_char)
+    end
+  end
+
+  describe "ASCII decode index" do
+    @ascii_alphabets [
+      "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz",
+      "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz",
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567",
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_",
+      "0123456789abcdef"
+    ]
+
+    test "is used only when every symbol is a single ASCII character" do
+      assert {:shortuuid_ascii_index, _} = Core.build_decode_index(["a", "b", "~"])
+      assert {:shortuuid_decode_index, _, _} = Core.build_decode_index(["a", "é"])
+      assert {:shortuuid_decode_index, _, _} = Core.build_decode_index(["a", "bc"])
+    end
+
+    test "rejects duplicate symbols" do
+      assert_raise ArgumentError, ~r/must not be empty or a prefix/, fn ->
+        Core.build_decode_index(["a", "b", "a"])
+      end
+    end
+
+    test "rejects wrong lengths, non-ASCII bytes and out-of-range values" do
+      for alphabet <- @ascii_alphabets do
+        {symbols, base, length, index} = ascii_setup(alphabet)
+
+        {:ok, valid} =
+          Core.encode_binary(
+            "2a162ee5-02f4-4701-9e87-72762cbce5e2",
+            base,
+            List.to_tuple(symbols),
+            length,
+            hd(symbols)
+          )
+
+        <<_, tail::binary>> = valid
+
+        assert {:ok, "2a162ee5-02f4-4701-9e87-72762cbce5e2"} =
+                 Core.decode_string(valid, base, index, length)
+
+        for bad <- [
+              tail,
+              valid <> hd(symbols),
+              <<0xFF>> <> tail,
+              "é" <> binary_part(tail, 1, byte_size(tail) - 1),
+              "",
+              "\0" <> tail
+            ] do
+          assert {:error, "Invalid input"} = Core.decode_string(bad, base, index, length)
+        end
+
+        max = String.duplicate(List.last(symbols), length)
+
+        assert Core.decode_string(max, base, index, length) ==
+                 reference_decode(max, symbols, base, length)
+      end
+    end
+
+    property "accepts and rejects exactly what a reference decoder does" do
+      check all(
+              alphabet <- member_of(@ascii_alphabets),
+              {symbols, base, length, index} = ascii_setup(alphabet),
+              parts <-
+                list_of(
+                  frequency([
+                    {20, member_of(symbols)},
+                    {1, binary(length: 1)},
+                    {1, string(:utf8, length: 1)}
+                  ]),
+                  min_length: length - 1,
+                  max_length: length + 1
+                ),
+              max_runs: 2_000
+            ) do
+        input = Enum.join(parts)
+
+        assert Core.decode_string(input, base, index, length) ==
+                 reference_decode(input, symbols, base, length)
+      end
+    end
+
+    property "round-trips every UUID" do
+      check all(
+              alphabet <- member_of(@ascii_alphabets),
+              {symbols, base, length, index} = ascii_setup(alphabet),
+              bytes <- binary(length: 16)
+            ) do
+        uuid = Core.format_uuid(:binary.decode_unsigned(bytes))
+
+        {:ok, encoded} =
+          Core.encode_binary(uuid, base, List.to_tuple(symbols), length, hd(symbols))
+
+        assert Core.decode_string(encoded, base, index, length) == {:ok, uuid}
+      end
+    end
+
+    defp ascii_setup(alphabet) do
+      symbols = String.graphemes(alphabet)
+      base = length(symbols)
+      length = ceil(128 / :math.log2(base))
+      index = Core.build_decode_index(symbols)
+      {:shortuuid_ascii_index, _} = index
+      {symbols, base, length, index}
+    end
+
+    # Straightforward decoder to compare against: valid UTF-8, exactly `length`
+    # codepoints, all of them symbols, and a value that fits in 128 bits.
+    defp reference_decode(input, symbols, base, length) do
+      values = symbols |> Enum.with_index() |> Map.new()
+
+      with true <- String.valid?(input),
+           codepoints = String.codepoints(input),
+           true <- Kernel.length(codepoints) == length,
+           true <- Enum.all?(codepoints, &Map.has_key?(values, &1)),
+           value = Enum.reduce(codepoints, 0, &(&2 * base + Map.fetch!(values, &1))),
+           true <- value < 2 ** 128 do
+        {:ok, Core.format_uuid(value)}
+      else
+        _ -> {:error, "Invalid input"}
+      end
     end
   end
 end
