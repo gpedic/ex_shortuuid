@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v4.3.0 (09.11.2026)
+
+### Changed
+* Faster decoding for alphabets made only of ASCII characters, including all
+  predefined alphabets: they decode with a byte lookup table, about 25-30% faster
+  than in 4.2.0. Input with the wrong length is rejected about 2.5x faster. Other
+  alphabets are unchanged.
+* The benchmarks in `bench/` run compiled code, so they measure the library rather than
+  the script interpreter.
+
 ## v4.2.0 (09.11.2026)
 
 ### Added
@@ -32,11 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `ShortUUID.Core.format_uuid/1` only accepts integers in the 128-bit range, and
   `ShortUUID.Core.encode_int/5` returns `{:error, "Invalid UUID"}` for other input
   instead of raising.
-* Faster decoding. Alphabets made only of ASCII characters, including all predefined
-  alphabets, decode with a byte lookup table, about 25% faster than before. Invalid
-  input is rejected earlier.
-* The benchmarks in `bench/` run compiled code, so they measure the library rather than
-  the script interpreter.
+* Faster decoding.
 * Clarified in the docs that alphabets are not required to be URL-safe, that only UUID
   input is case-insensitive, and which predefined alphabets are compatible with the
   Python and JavaScript implementations. Compatibility is now tested against fixtures
