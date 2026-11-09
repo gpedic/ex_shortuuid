@@ -72,6 +72,31 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  client-floor-probe:
+    runs-on: ubuntu-24.04
+    name: Client probe (Elixir ${{ matrix.image }})
+    container: hexpm/elixir:${{ matrix.image }}
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - 1.8.2-erlang-22.3.4.9-ubuntu-impish-20211102
+          - 1.9.4-erlang-22.3.4.9-ubuntu-impish-20211102
+          - 1.10.4-erlang-21.3.8.9-debian-bullseye-20260610-slim
+          - 1.11.4-erlang-24.3.4.9-debian-trixie-20260610-slim
+          - 1.12.3-erlang-24.3.4.9-debian-trixie-20260610-slim
+          - 1.13.4-erlang-25.3.2.6-debian-trixie-20260610-slim
+    env:
+      MIX_ENV: prod
+      LANG: C.UTF-8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: sed -i '/elixir: "~>/d' mix.exs
+      - run: mix compile --warnings-as-errors
+      - run: mix run scripts/client/smoke.exs
+
   lint:
     runs-on: ubuntu-24.04
     name: Lint, Dialyzer and docs
