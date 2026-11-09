@@ -26,7 +26,8 @@ defmodule ShortUUID.Core do
   @type uuid_string :: String.t()
   @type normalized_uuid :: String.t()
   @type short_uuid :: String.t()
-  @opaque decode_index :: {:shortuuid_decode_index, map, pos_integer}
+  @typedoc "Lookup structure built by `build_decode_index/1`; treat it as opaque."
+  @type decode_index :: {:shortuuid_decode_index, map, pos_integer}
 
   @spec parse_uuid(String.t()) :: {:ok, normalized_uuid} | {:error, String.t()}
   @doc """
@@ -38,6 +39,9 @@ defmodule ShortUUID.Core do
       {:ok, "550e8400e29b41d4a716446655440000"}
 
       iex> ShortUUID.Core.parse_uuid("{550e8400-e29b-41d4-a716-446655440000}")
+      {:ok, "550e8400e29b41d4a716446655440000"}
+
+      iex> ShortUUID.Core.parse_uuid("urn:uuid:550e8400-e29b-41d4-a716-446655440000")
       {:ok, "550e8400e29b41d4a716446655440000"}
 
       iex> ShortUUID.Core.parse_uuid("not-a-uuid")
@@ -56,6 +60,12 @@ defmodule ShortUUID.Core do
 
   def parse_uuid(<<?{, uuid::binary-size(36), ?}>>), do: parse_uuid(uuid)
   def parse_uuid(<<?{, uuid::binary-size(32), ?}>>), do: {:ok, uuid}
+
+  def parse_uuid(<<prefix::binary-size(9), uuid::binary-size(36)>>) do
+    if String.downcase(prefix) == "urn:uuid:",
+      do: parse_uuid(uuid),
+      else: {:error, "Invalid UUID"}
+  end
 
   def parse_uuid(_), do: {:error, "Invalid UUID"}
 
@@ -89,6 +99,8 @@ defmodule ShortUUID.Core do
   @doc """
   Encodes a 128-bit integer into a string using the specified base and alphabet.
   Pads the result to the desired length using the padding character.
+
+  Returns `{:error, "Invalid UUID"}` if the input is not a 16-byte binary.
   """
   def encode_int(<<int_value::128>>, base, alphabet_tuple, encoded_length, padding_char) do
     {digits, digit_count} = int_to_digits(int_value, base, alphabet_tuple, [], 0)
@@ -102,6 +114,9 @@ defmodule ShortUUID.Core do
       {:error, "Encoding resulted in incorrect length"}
     end
   end
+
+  def encode_int(_input, _base, _alphabet_tuple, _encoded_length, _padding_char),
+    do: {:error, "Invalid UUID"}
 
   @spec build_decode_index([String.t()]) :: decode_index
   @doc """
@@ -192,17 +207,19 @@ defmodule ShortUUID.Core do
 
   def decode_string(_, _, _, _), do: {:error, "Invalid input"}
 
-  @spec format_uuid(non_neg_integer) :: uuid_string
+  @spec format_uuid(0..0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF) :: uuid_string
   @doc """
   Formats a 128-bit integer as a standard UUID string with dashes.
   Converts the integer to a 32-character hex string and inserts dashes in the correct positions.
+  Raises a `FunctionClauseError` if the value is negative or does not fit in 128 bits.
 
   ## Examples
 
       iex> ShortUUID.Core.format_uuid(0x550e8400e29b41d4a716446655440000)
       "550e8400-e29b-41d4-a716-446655440000"
   """
-  def format_uuid(int_value) when is_integer(int_value) do
+  def format_uuid(int_value)
+      when is_integer(int_value) and int_value >= 0 and int_value >>> 128 == 0 do
     <<int_value::128>>
     |> Base.encode16(case: :lower)
     |> insert_dashes()

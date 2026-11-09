@@ -196,9 +196,7 @@ defmodule ShortUUIDTest do
     assert uuid == uuid2
   end
 
-  # Update property test syntax
-  @tag property: true
-  test "uuid encoding and decoding (there and back again)", %{property: true} do
+  property "uuid encoding and decoding (there and back again)" do
     check all(uuid <- uuid_generator()) do
       assert {:ok, encoded_uuid} = ShortUUID.encode(uuid)
       assert {:ok, decoded_uuid} = ShortUUID.decode(encoded_uuid)
@@ -206,15 +204,13 @@ defmodule ShortUUIDTest do
     end
   end
 
-  @tag property: true
-  test "rejects all binary input", %{property: true} do
+  property "rejects all binary input" do
     check all(binary <- random_binary_uuid()) do
       assert {:error, "Invalid UUID"} = ShortUUID.encode(binary)
     end
   end
 
-  @tag property: true
-  test "encoded UUIDs maintain length invariant", %{property: true} do
+  property "encoded UUIDs maintain length invariant" do
     check all(uuid <- uuid_generator()) do
       {:ok, encoded} = ShortUUID.encode(uuid)
       # base57 length should always be 22
@@ -232,8 +228,7 @@ defmodule ShortUUIDTest do
     end
   end
 
-  @tag property: true
-  test "encoded UUIDs only contain valid alphabet characters", %{property: true} do
+  property "encoded UUIDs only contain valid alphabet characters" do
     check all(uuid <- uuid_generator()) do
       {:ok, encoded} = ShortUUID.encode(uuid)
       # Verify that every character in the encoded string is in our alphabet
@@ -241,8 +236,7 @@ defmodule ShortUUIDTest do
     end
   end
 
-  @tag property: true
-  test "decoded UUIDs always match UUID format", %{property: true} do
+  property "decoded UUIDs always match UUID format" do
     check all(uuid <- uuid_generator()) do
       {:ok, encoded} = ShortUUID.encode(uuid)
       {:ok, decoded} = ShortUUID.decode(encoded)
@@ -254,8 +248,7 @@ defmodule ShortUUIDTest do
     end
   end
 
-  @tag property: true
-  test "encoding maintains ordering of UUIDs", %{property: true} do
+  property "encoding maintains ordering of UUIDs" do
     check all(
             uuid1 <- uuid_generator(),
             uuid2 <- uuid_generator()
@@ -270,8 +263,7 @@ defmodule ShortUUIDTest do
     end
   end
 
-  @tag property: true
-  test "invalid UUIDs are rejected", %{property: true} do
+  property "invalid UUIDs are rejected" do
     check all(invalid <- invalid_uuid_generator()) do
       assert {:error, _} = ShortUUID.encode(invalid)
     end

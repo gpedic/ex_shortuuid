@@ -1,0 +1,28 @@
+version: 2
+updates:
+  - package-ecosystem: mix
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      dev-dependencies:
+        patterns: ["*"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+
+  # Pinned reference implementations used to generate the compatibility fixtures
+  - package-ecosystem: pip
+    directory: /scripts/compat
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: npm
+    directory: /scripts/compat
+    schedule:
+      interval: weekly

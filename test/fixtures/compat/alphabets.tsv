@@ -1,0 +1,14 @@
+# name	alphabet
+# Alphabets used to generate the compatibility fixtures. Python's shortuuid sorts
+# the alphabet and JavaScript's short-uuid keeps it as given, so every fixture row
+# records the alphabet the other implementation actually used.
+base57_shortuuid	23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz
+base58	123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz
+flickr58	123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ
+base32	ABCDEFGHIJKLMNOPQRSTUVWXYZ234567
+base32_crockford	0123456789ABCDEFGHJKMNPQRSTVWXYZ
+base36	0123456789abcdefghijklmnopqrstuvwxyz
+base62	0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz
+base64_url	ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_
+hex	0123456789abcdef
+greek	αβγδεζηθικλμνξοπρστυφχψω

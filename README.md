@@ -21,7 +21,15 @@ Not every alphabet is URL-safe: `:base64` and custom alphabets may contain chara
 Unlike some other solutions, ShortUUID does not produce UUIDs on its own as there are already plenty of libraries to do so. To generate UUIDs, use libraries such as
 [Elixir UUID](https://github.com/zyro/elixir-uuid), [Erlang UUID](https://github.com/okeuday/uuid) and also [Ecto](https://hexdocs.pm/ecto/Ecto.UUID.html) as it can generate version 4 UUIDs.
 
-ShortUUID accepts common UUID formats, with or without hyphens and in curly braces, in any letter case, since UUIDs are case-insensitive.
+ShortUUID accepts common UUID formats in any letter case, since UUIDs are case-insensitive:
+
+```elixir
+"550e8400-e29b-41d4-a716-446655440000"           # with hyphens
+"550e8400e29b41d4a716446655440000"               # without hyphens
+"{550e8400-e29b-41d4-a716-446655440000}"         # in curly braces
+"urn:uuid:550e8400-e29b-41d4-a716-446655440000"  # as a URN (RFC 9562)
+```
+
 Encoded short IDs are case-sensitive: `"abc"` and `"ABC"` are different IDs.
 
 ## Compatibility
@@ -45,6 +53,8 @@ A mismatch is silent: the ID decodes to a different, valid UUID instead of faili
 | custom alphabet | only if sorted by codepoint | yes, except characters outside the BMP such as emoji |
 
 ShortUUID is also stricter than both: it rejects IDs that are not exactly the encoded length or that are out of the 128-bit range, where the other libraries may return a UUID.
+
+These results are checked by tests against fixtures generated with pinned versions of both libraries, see [`scripts/compat`](scripts/compat/README.md).
 
 ### v4.0.0 breaking changes
 
@@ -108,10 +118,12 @@ Add `:shortuuid` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:shortuuid, "~> 4.0"}
+    {:shortuuid, "~> 4.2"}
   ]
 end
 ```
+
+ShortUUID has no runtime dependencies and supports Elixir 1.8 or later.
 
 ## Examples
 
