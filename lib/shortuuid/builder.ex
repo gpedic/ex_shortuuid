@@ -83,22 +83,40 @@ defmodule ShortUUID.Builder do
     alphabet_tuple = List.to_tuple(symbols)
     decode_index = ShortUUID.Core.build_decode_index(symbols)
 
+    escaped_alphabet = Macro.escape(alphabet_tuple)
+    escaped_index = Macro.escape(decode_index)
+    alphabet_doc = "#{base} characters: `#{inspect(validated_alphabet)}`"
+
+    # Everything is unquoted directly into the function bodies so that `use`
+    # does not add aliases, imports or module attributes to the caller.
     quote do
-      import Bitwise
-      alias ShortUUID.Core
       @behaviour ShortUUID.Behaviour
 
-      @alphabet unquote(validated_alphabet)
-      @padding_char unquote(padding_char)
-      @alphabet_tuple unquote(Macro.escape(alphabet_tuple))
-      @decode_index unquote(Macro.escape(decode_index))
-      @base unquote(base)
-      @encoded_length unquote(encoded_length)
+      @doc """
+      Encodes a UUID string into a #{unquote(encoded_length)}-character short ID.
 
+      Accepts UUIDs with or without hyphens, in curly braces or with a `urn:uuid:`
+      prefix, in any letter case. The alphabet has #{unquote(alphabet_doc)}.
+
+      Returns `{:ok, short_id}` or `{:error, "Invalid UUID"}`.
+      """
+      @impl ShortUUID.Behaviour
       @spec encode(String.t()) :: {:ok, String.t()} | {:error, String.t()}
-      def encode(uuid),
-        do: Core.encode_binary(uuid, @base, @alphabet_tuple, @encoded_length, @padding_char)
+      def encode(uuid) do
+        ShortUUID.Core.encode_binary(
+          uuid,
+          unquote(base),
+          unquote(escaped_alphabet),
+          unquote(encoded_length),
+          unquote(padding_char)
+        )
+      end
 
+      @doc """
+      Encodes a UUID string like `encode/1`, but returns the short ID directly and
+      raises an `ArgumentError` on invalid input.
+      """
+      @impl ShortUUID.Behaviour
       @spec encode!(String.t()) :: String.t() | no_return()
       def encode!(uuid) do
         case encode(uuid) do
@@ -107,10 +125,29 @@ defmodule ShortUUID.Builder do
         end
       end
 
-      @spec decode(String.t()) :: {:ok, String.t()} | {:error, String.t()}
-      def decode(string),
-        do: Core.decode_string(string, @base, @decode_index, @encoded_length)
+      @doc """
+      Decodes a #{unquote(encoded_length)}-character short ID back into a lowercase,
+      hyphenated UUID string.
 
+      Short IDs are case-sensitive and must use exactly this module's alphabet
+      (#{unquote(alphabet_doc)}). Returns `{:ok, uuid}` or `{:error, "Invalid input"}`.
+      """
+      @impl ShortUUID.Behaviour
+      @spec decode(String.t()) :: {:ok, String.t()} | {:error, String.t()}
+      def decode(string) do
+        ShortUUID.Core.decode_string(
+          string,
+          unquote(base),
+          unquote(escaped_index),
+          unquote(encoded_length)
+        )
+      end
+
+      @doc """
+      Decodes a short ID like `decode/1`, but returns the UUID directly and raises
+      an `ArgumentError` on invalid input.
+      """
+      @impl ShortUUID.Behaviour
       @spec decode!(String.t()) :: String.t() | no_return()
       def decode!(string) do
         case decode(string) do

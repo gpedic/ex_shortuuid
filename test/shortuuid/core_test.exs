@@ -156,4 +156,43 @@ defmodule ShortUUID.CoreTest do
       assert {:ok, ^uuid} = Core.decode_string(encoded, @test_base, @test_index, @test_length)
     end
   end
+
+  describe "urn:uuid: input" do
+    test "accepts the urn:uuid: prefix in any case" do
+      assert Core.parse_uuid("urn:uuid:550e8400-e29b-41d4-a716-446655440000") ==
+               {:ok, "550e8400e29b41d4a716446655440000"}
+
+      assert Core.parse_uuid("URN:UUID:550E8400-E29B-41D4-A716-446655440000") ==
+               {:ok, "550E8400E29B41D4A716446655440000"}
+    end
+
+    test "rejects other prefixes and non-hyphenated urns" do
+      assert {:error, _} = Core.parse_uuid("urn:uid:550e8400-e29b-41d4-a716-4466554400000")
+      assert {:error, _} = Core.parse_uuid("urx:uuid:550e8400-e29b-41d4-a716-446655440000")
+      assert {:error, _} = Core.parse_uuid("urn:uuid:550e8400e29b41d4a716446655440000")
+      assert {:error, _} = Core.parse_uuid("urn:uuid:{550e8400-e29b-41d4-a716-446655440000}")
+    end
+
+    test "is encoded like the plain UUID" do
+      assert ShortUUID.encode("urn:uuid:550e8400-e29b-41d4-a716-446655440000") ==
+               ShortUUID.encode("550e8400-e29b-41d4-a716-446655440000")
+    end
+  end
+
+  describe "input guards" do
+    test "format_uuid/1 rejects values outside the 128-bit range" do
+      assert Core.format_uuid(0) == "00000000-0000-0000-0000-000000000000"
+      assert Core.format_uuid(2 ** 128 - 1) == "ffffffff-ffff-ffff-ffff-ffffffffffff"
+      assert_raise FunctionClauseError, fn -> Core.format_uuid(-1) end
+      assert_raise FunctionClauseError, fn -> Core.format_uuid(2 ** 128) end
+    end
+
+    test "encode_int/5 returns an error for non-128-bit input" do
+      assert {:error, "Invalid UUID"} =
+               Core.encode_int("abc", @test_base, @test_tuple, @test_length, @test_zero_char)
+
+      assert {:error, "Invalid UUID"} =
+               Core.encode_int(<<1::64>>, @test_base, @test_tuple, @test_length, @test_zero_char)
+    end
+  end
 end

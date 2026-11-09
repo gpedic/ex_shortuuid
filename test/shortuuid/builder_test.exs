@@ -127,8 +127,7 @@ defmodule ShortUUID.BuilderTest do
       end
     end
 
-    @tag property: true
-    test "round-trip every UUID" do
+    property "round-trip every UUID" do
       check all(uuid <- uuid_generator(), max_runs: 300) do
         expected = uuid |> String.trim_leading("{") |> String.trim_trailing("}") |> normalize()
 
@@ -139,8 +138,7 @@ defmodule ShortUUID.BuilderTest do
       end
     end
 
-    @tag property: true
-    test "Unicode normalization never decodes to a different UUID" do
+    property "Unicode normalization never decodes to a different UUID" do
       check all(uuid <- uuid_generator(), form <- member_of([:nfc, :nfd]), max_runs: 300) do
         for module <- @merging_modules do
           {:ok, encoded} = module.encode(uuid)
@@ -274,8 +272,7 @@ defmodule ShortUUID.BuilderTest do
     end
   end
 
-  @tag property: true
-  test "custom alphabets maintain encoding length" do
+  property "custom alphabets maintain encoding length" do
     alphabet_generator =
       one_of([
         valid_emoji_alphabet_generator(),
@@ -303,8 +300,7 @@ defmodule ShortUUID.BuilderTest do
     end
   end
 
-  @tag property: true
-  test "encode/decode works with randomly generated valid alphabets" do
+  property "encode/decode works with randomly generated valid alphabets" do
     alphabet_generator =
       one_of([
         valid_emoji_alphabet_generator(),
@@ -329,6 +325,130 @@ defmodule ShortUUID.BuilderTest do
       {:ok, decoded} = module_name.decode(encoded)
 
       assert decoded == uuid
+    end
+  end
+
+  describe "predefined alphabet invariants" do
+    @predefined %{
+      base57_shortuuid: "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz",
+      base32: "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567",
+      base32_crockford: "0123456789ABCDEFGHJKMNPQRSTVWXYZ",
+      base32_hex: "0123456789ABCDEFGHIJKLMNOPQRSTUV",
+      base32_z: "ybndrfg8ejkmcpqxot1uwisza345h769",
+      base58: "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz",
+      base62: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
+      base64: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",
+      base64_url: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+    }
+
+    for {name, _alphabet} <- @predefined do
+      Module.create(
+        Module.concat([__MODULE__, Predefined, name]),
+        quote(do: use(ShortUUID.Builder, alphabet: unquote(name))),
+        Macro.Env.location(__ENV__)
+      )
+    end
+
+    defp predefined_module(name), do: Module.concat([__MODULE__, Predefined, name])
+
+    defp to_digits(value, alphabet, length) do
+      symbols = String.graphemes(alphabet)
+      digits = Integer.digits(value, length(symbols))
+      padding = List.duplicate(0, length - length(digits))
+      Enum.map_join(padding ++ digits, &Enum.at(symbols, &1))
+    end
+
+    test "the largest UUID round-trips and 2^128 is rejected" do
+      max_uuid = "ffffffff-ffff-ffff-ffff-ffffffffffff"
+
+      for {name, alphabet} <- @predefined do
+        module = predefined_module(name)
+        {:ok, encoded} = module.encode(max_uuid)
+        length = String.length(encoded)
+
+        assert encoded == to_digits(2 ** 128 - 1, alphabet, length)
+        assert {:ok, ^max_uuid} = module.decode(encoded)
+
+        # 2^128 needs one more digit for bases that are powers of 2^(128/length)
+        if Integer.pow(String.length(alphabet), length) > 2 ** 128 do
+          assert {:error, _} = module.decode(to_digits(2 ** 128, alphabet, length)),
+                 "#{name} accepted 2^128"
+        end
+      end
+    end
+
+    property "every decodable string is the canonical encoding of its UUID" do
+      check all(
+              {name, alphabet} <- member_of(Map.to_list(@predefined)),
+              chars <- list_of(member_of(String.graphemes(alphabet)), length: 26)
+            ) do
+        module = predefined_module(name)
+        {:ok, zero} = module.encode("00000000-0000-0000-0000-000000000000")
+        input = chars |> Enum.take(String.length(zero)) |> Enum.join()
+
+        case module.decode(input) do
+          {:ok, uuid} -> assert module.encode(uuid) == {:ok, input}
+          {:error, _} -> :ok
+        end
+      end
+    end
+  end
+
+  describe "generated modules" do
+    defmodule OwnAttributes do
+      @alphabet "user value"
+      @base :user_value
+      use ShortUUID.Builder, alphabet: :base58
+
+      def own_attributes, do: {@alphabet, @base}
+    end
+
+    test "implement ShortUUID.Behaviour" do
+      behaviours = ShortUUID.__info__(:attributes) |> Keyword.get_values(:behaviour)
+      assert [ShortUUID.Behaviour] in behaviours
+
+      behaviours = OwnAttributes.__info__(:attributes) |> Keyword.get_values(:behaviour)
+      assert [ShortUUID.Behaviour] in behaviours
+    end
+
+    test "do not override the caller's module attributes or aliases" do
+      assert OwnAttributes.own_attributes() == {"user value", :user_value}
+
+      # Bitwise is not imported into the caller
+      assert_raise CompileError, fn ->
+        ExUnit.CaptureIO.capture_io(:stderr, fn ->
+          Code.compile_string("""
+          defmodule ShortUUID.BuilderTest.ImportProbe do
+            use ShortUUID.Builder, alphabet: :base58
+            def probe, do: band(1, 1)
+          end
+          """)
+        end)
+      end
+
+      # ShortUUID.Core is not aliased as Core in the caller
+      ExUnit.CaptureIO.capture_io(:stderr, fn ->
+        Code.compile_string("""
+        defmodule ShortUUID.BuilderTest.AliasProbe do
+          use ShortUUID.Builder, alphabet: :base58
+          def probe, do: Core.format_uuid(0)
+        end
+        """)
+      end)
+
+      probe = Module.concat(__MODULE__, AliasProbe)
+      assert_raise UndefinedFunctionError, fn -> probe.probe() end
+    end
+
+    test "have documentation" do
+      {:docs_v1, _, _, _, _, _, docs} = Code.fetch_docs(ShortUUID)
+
+      for {name, arity} <- [encode: 1, encode!: 1, decode: 1, decode!: 1] do
+        assert {{:function, ^name, ^arity}, _, _, %{"en" => doc}, _} =
+                 List.keyfind(docs, {:function, name, arity}, 0)
+
+        assert doc =~ "short ID"
+      end
     end
   end
 end
