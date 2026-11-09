@@ -21,7 +21,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Oldest supported Elixir (see `elixir:` in mix.exs)
+          # Oldest Elixir the test dependencies support; older client
+          # versions are covered by the client job below
           - elixir: "1.14"
             otp: "25"
           - elixir: "1.15"
@@ -72,9 +73,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  client-floor-probe:
+  # Clients can use older Elixir versions than our dev and test tooling needs.
+  # This compiles only lib/, without Mix or dependencies, down to the minimum
+  # supported version (`elixir:` in mix.exs) and runs a smoke test.
+  client:
     runs-on: ubuntu-24.04
-    name: Client probe (Elixir ${{ matrix.image }})
+    name: Client (Elixir ${{ matrix.image }})
     container: hexpm/elixir:${{ matrix.image }}
     strategy:
       fail-fast: false

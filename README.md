@@ -123,6 +123,8 @@ def deps do
 end
 ```
 
+ShortUUID has no runtime dependencies and supports Elixir 1.8 or later.
+
 ## Examples
 
 ```elixir
