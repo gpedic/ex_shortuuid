@@ -1,10 +1,25 @@
 defmodule ShortUUID.Behaviour do
   @moduledoc """
-  Defines the behavior for ShortUUID-compatible modules.
+  Defines the behaviour for ShortUUID-compatible modules.
 
-  This behavior ensures consistent interface across different ShortUUID implementations.
-  Any module implementing this behavior should provide encode/decode functionality
-  for converting UUIDs to shorter string representations and back.
+  Modules created with `ShortUUID.Builder` implement this behaviour and meet
+  the contract below. Hand-written implementations should meet it too, so that
+  code using them (for example an Ecto type) can rely on it.
+
+  ## Contract
+
+  - `encode/1` accepts a UUID string in any of the formats listed in the
+    README (with or without hyphens, in curly braces or as a `urn:uuid:` URN),
+    in any letter case. It returns `{:ok, short_id}`, or `{:error, message}`
+    for anything else.
+  - `decode/1` returns `{:ok, uuid}` with a lowercase, hyphenated UUID, and
+    accepts exactly the strings that `encode/1` produces: every UUID has one
+    short ID, and decoding it and encoding the result gives the same short ID.
+    Any other input returns `{:error, message}`.
+  - `encode/1` and `decode/1` never raise. Any term, including non-strings and
+    invalid UTF-8, returns `{:error, message}` instead.
+  - `encode!/1` and `decode!/1` return the value directly and raise an
+    `ArgumentError` where the non-bang version returns an error.
 
   ## Required Callbacks
 
@@ -19,7 +34,7 @@ defmodule ShortUUID.Behaviour do
 
   ## Parameters
 
-  - `uuid` - A standard UUID string (with or without hyphens)
+  - `uuid` - A UUID string in one of the supported formats
 
   ## Returns
 
@@ -34,7 +49,7 @@ defmodule ShortUUID.Behaviour do
 
   ## Parameters
 
-  - `uuid` - A standard UUID string (with or without hyphens)
+  - `uuid` - A UUID string in one of the supported formats
 
   ## Returns
 
