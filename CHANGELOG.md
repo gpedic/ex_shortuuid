@@ -32,7 +32,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `ShortUUID.Core.format_uuid/1` only accepts integers in the 128-bit range, and
   `ShortUUID.Core.encode_int/5` returns `{:error, "Invalid UUID"}` for other input
   instead of raising.
-* Faster decoding.
+* Faster decoding. Alphabets made only of ASCII characters, including all predefined
+  alphabets, decode with a byte lookup table, about 25% faster than before. Invalid
+  input is rejected earlier.
+* The benchmarks in `bench/` run compiled code, so they measure the library rather than
+  the script interpreter.
 * Clarified in the docs that alphabets are not required to be URL-safe, that only UUID
   input is case-insensitive, and which predefined alphabets are compatible with the
   Python and JavaScript implementations. Compatibility is now tested against fixtures
