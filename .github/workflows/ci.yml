@@ -22,6 +22,8 @@ jobs:
       matrix:
         include:
           # Oldest supported Elixir (see `elixir:` in mix.exs)
+          - elixir: "1.14"
+            otp: "25"
           - elixir: "1.15"
             otp: "26"
           - elixir: "1.17"

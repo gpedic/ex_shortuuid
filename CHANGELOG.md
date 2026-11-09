@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   decode many UUIDs. Encoded strings are now matched by codepoint instead of grapheme.
 
 ### Changed
-* Requires Elixir 1.15 or later.
+* Requires Elixir 1.14 or later, the oldest version tested in CI.
 * Custom alphabets are now rejected at compile time if a character is a prefix of
   another one, a character is not in Unicode NFC form, or Unicode normalization could
   make an encoded ID decode to a different UUID.

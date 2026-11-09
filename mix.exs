@@ -10,7 +10,7 @@ defmodule ShortUUID.Mixfile do
       app: :shortuuid,
       name: @name,
       version: @version,
-      elixir: "~> 1.15",
+      elixir: "~> 1.14",
       elixirc_paths: elixirc_paths(Mix.env()),
       test_coverage: [tool: ExCoveralls],
       aliases: aliases(),
