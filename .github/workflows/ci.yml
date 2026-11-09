@@ -93,7 +93,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - run: sed -i '/elixir: "~>/d' mix.exs
+      - name: Drop the Elixir requirement for the probe
+        run: |
+          sed -i '/elixir: "~>/d' mix.exs
       - run: mix compile --warnings-as-errors
       - run: mix run scripts/client/smoke.exs
 
