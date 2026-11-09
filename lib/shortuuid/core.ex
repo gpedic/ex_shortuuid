@@ -13,8 +13,12 @@ defmodule ShortUUID.Core do
   - `decode_string/4` - Decodes a shortened string back into a UUID.
   - `format_uuid/1` - Formats an integer value as a UUID string.
   - `encode_int/5` - Encodes an integer value into a string using the specified alphabet.
-  - `decode_to_int/3` - Decodes a string into an integer value using the specified alphabet.
-  - `int_to_string/4` - Converts an integer value into a string using the specified alphabet.
+  - `build_decode_index/1` - Builds the lookup structure used by `decode_string/4`.
+
+  Alphabet symbols are matched by their exact codepoints, not by grapheme
+  clusters. Symbols that visually merge when placed next to each other (for
+  example combining marks or regional indicators) are therefore handled
+  correctly, as long as no symbol is a prefix of another symbol.
   """
 
   import Bitwise
@@ -22,6 +26,8 @@ defmodule ShortUUID.Core do
   @type uuid_string :: String.t()
   @type normalized_uuid :: String.t()
   @type short_uuid :: String.t()
+  @typedoc "Lookup structure built by `build_decode_index/1`; treat it as opaque."
+  @type decode_index :: {:shortuuid_decode_index, map, pos_integer}
 
   @spec parse_uuid(String.t()) :: {:ok, normalized_uuid} | {:error, String.t()}
   @doc """
@@ -33,6 +39,9 @@ defmodule ShortUUID.Core do
       {:ok, "550e8400e29b41d4a716446655440000"}
 
       iex> ShortUUID.Core.parse_uuid("{550e8400-e29b-41d4-a716-446655440000}")
+      {:ok, "550e8400e29b41d4a716446655440000"}
+
+      iex> ShortUUID.Core.parse_uuid("urn:uuid:550e8400-e29b-41d4-a716-446655440000")
       {:ok, "550e8400e29b41d4a716446655440000"}
 
       iex> ShortUUID.Core.parse_uuid("not-a-uuid")
@@ -51,6 +60,12 @@ defmodule ShortUUID.Core do
 
   def parse_uuid(<<?{, uuid::binary-size(36), ?}>>), do: parse_uuid(uuid)
   def parse_uuid(<<?{, uuid::binary-size(32), ?}>>), do: {:ok, uuid}
+
+  def parse_uuid(<<prefix::binary-size(9), uuid::binary-size(36)>>) do
+    if String.downcase(prefix) == "urn:uuid:",
+      do: parse_uuid(uuid),
+      else: {:error, "Invalid UUID"}
+  end
 
   def parse_uuid(_), do: {:error, "Invalid UUID"}
 
@@ -84,29 +99,73 @@ defmodule ShortUUID.Core do
   @doc """
   Encodes a 128-bit integer into a string using the specified base and alphabet.
   Pads the result to the desired length using the padding character.
+
+  Returns `{:error, "Invalid UUID"}` if the input is not a 16-byte binary.
   """
   def encode_int(<<int_value::128>>, base, alphabet_tuple, encoded_length, padding_char) do
-    encoded =
-      int_to_string(int_value, base, alphabet_tuple)
-      |> pad_string(encoded_length, padding_char)
+    {digits, digit_count} = int_to_digits(int_value, base, alphabet_tuple, [], 0)
 
-    if String.length(encoded) == encoded_length do
-      {:ok, encoded}
+    # Length is measured in alphabet symbols, not graphemes: adjacent symbols
+    # may render as a single grapheme (e.g. combining marks) without being ambiguous.
+    if digit_count <= encoded_length do
+      padding = List.duplicate(to_string(padding_char), encoded_length - digit_count)
+      {:ok, IO.iodata_to_binary([padding | digits])}
     else
       {:error, "Encoding resulted in incorrect length"}
     end
   end
 
-  defp pad_string(string, length, padding_char) do
-    padding_length = length - String.length(string)
-    String.duplicate(to_string(padding_char), max(0, padding_length)) <> string
+  def encode_int(_input, _base, _alphabet_tuple, _encoded_length, _padding_char),
+    do: {:error, "Invalid UUID"}
+
+  @spec build_decode_index([String.t()]) :: decode_index
+  @doc """
+  Builds the decode index for a list of alphabet symbols, where the position of a
+  symbol in the list is its digit value.
+
+  No symbol may be a prefix of another symbol (compared by codepoints), otherwise
+  an `ArgumentError` is raised.
+  """
+  def build_decode_index([_ | _] = symbols) do
+    trie =
+      symbols
+      |> Enum.with_index()
+      |> Enum.reduce(%{}, fn {symbol, value}, trie ->
+        put_symbol(trie, String.to_charlist(symbol), value, symbol)
+      end)
+
+    max_symbol_bytes = symbols |> Enum.map(&byte_size/1) |> Enum.max()
+    {:shortuuid_decode_index, trie, max_symbol_bytes}
   end
 
-  @spec decode_string(String.t(), pos_integer, map, pos_integer) ::
+  defp put_symbol(_trie, [], _value, symbol), do: raise_prefix_error(symbol)
+
+  defp put_symbol(trie, [codepoint], value, symbol) do
+    if Map.has_key?(trie, codepoint),
+      do: raise_prefix_error(symbol),
+      else: Map.put(trie, codepoint, {:value, value})
+  end
+
+  defp put_symbol(trie, [codepoint | rest], value, symbol) do
+    case Map.get(trie, codepoint, %{}) do
+      %{} = subtrie -> Map.put(trie, codepoint, put_symbol(subtrie, rest, value, symbol))
+      {:value, _} -> raise_prefix_error(symbol)
+    end
+  end
+
+  defp raise_prefix_error(symbol) do
+    raise ArgumentError,
+          "Alphabet symbols must not be empty or a prefix of another symbol, got: #{inspect(symbol)}"
+  end
+
+  @spec decode_string(String.t(), pos_integer, decode_index | map, pos_integer) ::
           {:ok, uuid_string} | {:error, String.t()}
   @doc """
   Decodes a shortened string back into a UUID using the specified base and alphabet.
   Validates the input length and ensures the decoded value is within valid UUID range.
+
+  The index should be built with `build_decode_index/1`. A plain map of
+  `symbol => value` is also accepted, but is converted on every call.
 
   ## Examples
 
@@ -118,9 +177,16 @@ defmodule ShortUUID.Core do
       iex> ShortUUID.Core.decode_string("invalid", 58, alphabet, 22)
       {:error, "Invalid input"}
   """
-  def decode_string(string, base, codepoint_index, encoded_length) when is_binary(string) do
-    with true <- String.length(string) == encoded_length,
-         {:ok, value} <- decode_to_int(string, base, codepoint_index),
+  def decode_string(
+        string,
+        base,
+        {:shortuuid_decode_index, trie, max_symbol_bytes},
+        encoded_length
+      )
+      when is_binary(string) do
+    with true <- byte_size(string) <= max_symbol_bytes * encoded_length,
+         {:ok, value, ^encoded_length} <-
+           decode_symbols(string, trie, :root, base, 0, 0, encoded_length),
          true <- value >>> 128 == 0 do
       # Format the UUID after verifying it's within valid range
       {:ok, format_uuid(value)}
@@ -129,19 +195,31 @@ defmodule ShortUUID.Core do
     end
   end
 
+  def decode_string(string, base, %{} = symbol_index, encoded_length) when is_binary(string) do
+    index =
+      symbol_index
+      |> Enum.sort_by(fn {_symbol, value} -> value end)
+      |> Enum.map(fn {symbol, _value} -> symbol end)
+      |> build_decode_index()
+
+    decode_string(string, base, index, encoded_length)
+  end
+
   def decode_string(_, _, _, _), do: {:error, "Invalid input"}
 
-  @spec format_uuid(non_neg_integer) :: uuid_string
+  @spec format_uuid(0..0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF) :: uuid_string
   @doc """
   Formats a 128-bit integer as a standard UUID string with dashes.
   Converts the integer to a 32-character hex string and inserts dashes in the correct positions.
+  Raises a `FunctionClauseError` if the value is negative or does not fit in 128 bits.
 
   ## Examples
 
       iex> ShortUUID.Core.format_uuid(0x550e8400e29b41d4a716446655440000)
       "550e8400-e29b-41d4-a716-446655440000"
   """
-  def format_uuid(int_value) when is_integer(int_value) do
+  def format_uuid(int_value)
+      when is_integer(int_value) and int_value >= 0 and int_value >>> 128 == 0 do
     <<int_value::128>>
     |> Base.encode16(case: :lower)
     |> insert_dashes()
@@ -154,31 +232,40 @@ defmodule ShortUUID.Core do
     a <> "-" <> b <> "-" <> c <> "-" <> d <> "-" <> e
   end
 
-  # Decodes a string into its integer representation using the specified base and alphabet.
-  # Returns an error if any character in the string is not in the alphabet.
-  defp decode_to_int(string, base, codepoint_index) do
-    string
-    |> String.graphemes()
-    |> Enum.reduce_while({:ok, 0}, fn char, {:ok, acc} ->
-      case Map.fetch(codepoint_index, char) do
-        {:ok, value} -> {:cont, {:ok, acc * base + value}}
-        # Return error instead of continuing
-        :error -> {:halt, {:error, "Invalid character"}}
-      end
-    end)
+  # Walks the input codepoint by codepoint through the symbol trie. Because no
+  # symbol is a prefix of another, the first complete match is the only possible
+  # one, so every input has at most one parse. Stops as soon as more than
+  # `max_count` symbols are seen or a codepoint is not part of any symbol.
+  defp decode_symbols(<<>>, _trie, :root, _base, acc, count, _max_count), do: {:ok, acc, count}
+
+  defp decode_symbols(<<codepoint::utf8, rest::binary>>, trie, node, base, acc, count, max_count) do
+    current = if node == :root, do: trie, else: node
+
+    case current do
+      %{^codepoint => {:value, value}} when count < max_count ->
+        decode_symbols(rest, trie, :root, base, acc * base + value, count + 1, max_count)
+
+      %{^codepoint => %{} = next} ->
+        decode_symbols(rest, trie, next, base, acc, count, max_count)
+
+      _ ->
+        :error
+    end
   end
 
-  # Converts an integer to a string using the specified base and alphabet.
-  # Uses tail recursion with an accumulator for efficiency.
-  defp int_to_string(number, base, alphabet_tuple, acc \\ [])
-  defp int_to_string(0, _, _, acc), do: to_string(acc)
+  defp decode_symbols(_string, _trie, _node, _base, _acc, _count, _max_count), do: :error
 
-  defp int_to_string(number, base, alphabet_tuple, acc) when number > 0 do
-    int_to_string(
+  # Converts an integer to a list of alphabet symbols (most significant first)
+  # and counts them.
+  defp int_to_digits(0, _base, _alphabet_tuple, acc, count), do: {acc, count}
+
+  defp int_to_digits(number, base, alphabet_tuple, acc, count) when number > 0 do
+    int_to_digits(
       div(number, base),
       base,
       alphabet_tuple,
-      [elem(alphabet_tuple, rem(number, base)) | acc]
+      [elem(alphabet_tuple, rem(number, base)) | acc],
+      count + 1
     )
   end
 end

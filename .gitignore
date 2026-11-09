@@ -26,3 +26,9 @@ shortuuid-*.tar
 /tmp/
 
 .elixir_ls
+
+# Dialyzer PLTs
+/priv/plts/
+
+# Dependencies of the compatibility fixture generators
+/scripts/compat/node_modules/

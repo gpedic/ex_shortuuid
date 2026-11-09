@@ -10,18 +10,51 @@
 
 <!-- MDOC !-->
 
-ShortUUID is a lightweight Elixir library for generating short, unique IDs in URLs. It turns standard UUIDs into smaller strings ideal for use in URLs.
-You can choose from a set of predefined alphabets or define your own. 
-The default alphabet includes lowercase letters, uppercase letters, and digits, omitting characters like 'l', '1', 'I', 'O', and '0' to keep them readable.
+ShortUUID is a lightweight Elixir library that turns standard UUIDs into shorter strings, for example for use in URLs.
+You can choose from a set of predefined alphabets or define your own.
+The default alphabet includes lowercase letters, uppercase letters, and digits, omitting characters like 'l', '1', 'I', 'O', and '0' to keep them readable. It is URL-safe.
 
-**Note:** Different ShortUUID implementations be compatible as long as they use the same alphabet. However, there is no official standard, so if you plan to use ShortUUID with other libraries, it's a good idea to research and test for compatibility.
+Not every alphabet is URL-safe: `:base64` and custom alphabets may contain characters that need escaping in URLs (see [Custom Alphabets](#custom-alphabets)).
+
+**Note:** Different ShortUUID implementations are compatible as long as they use the same alphabet in the same order. There is no official standard, so if you plan to use ShortUUID with other libraries, test for compatibility. See [Compatibility with other implementations](#compatibility-with-other-implementations).
 
 Unlike some other solutions, ShortUUID does not produce UUIDs on its own as there are already plenty of libraries to do so. To generate UUIDs, use libraries such as
 [Elixir UUID](https://github.com/zyro/elixir-uuid), [Erlang UUID](https://github.com/okeuday/uuid) and also [Ecto](https://hexdocs.pm/ecto/Ecto.UUID.html) as it can generate version 4 UUIDs.
 
-ShortUUID supports common UUID formats and is case-insensitive.
+ShortUUID accepts common UUID formats in any letter case, since UUIDs are case-insensitive:
+
+```elixir
+"550e8400-e29b-41d4-a716-446655440000"           # with hyphens
+"550e8400e29b41d4a716446655440000"               # without hyphens
+"{550e8400-e29b-41d4-a716-446655440000}"         # in curly braces
+"urn:uuid:550e8400-e29b-41d4-a716-446655440000"  # as a URN (RFC 9562)
+```
+
+Encoded short IDs are case-sensitive: `"abc"` and `"ABC"` are different IDs.
 
 ## Compatibility
+
+### Compatibility with other implementations
+
+ShortUUID encodes the most significant bits first and pads with the first alphabet character at the start, like Python's [shortuuid](https://github.com/skorokithakis/shortuuid) and Node.js [short-uuid](https://github.com/oculus42/short-uuid).
+Encoded IDs are interchangeable as long as both sides use the same alphabet in the same order.
+
+Python's `shortuuid` sorts custom alphabets, so only alphabets that are already sorted produce the same IDs.
+A mismatch is silent: the ID decodes to a different, valid UUID instead of failing.
+
+| Alphabet | Python `shortuuid` | Node.js `short-uuid` |
+|---|---|---|
+| `:base57_shortuuid` (default) | yes, default alphabet | yes |
+| `:base58` | yes | yes |
+| `:base62` | yes | yes |
+| `:base32_crockford` | yes | yes |
+| `:base32_hex` | yes | yes |
+| `:base32`, `:base32_z`, `:base64`, `:base64_url` | no, Python sorts them | yes |
+| custom alphabet | only if sorted by codepoint | yes, except characters outside the BMP such as emoji |
+
+ShortUUID is also stricter than both: it rejects IDs that are not exactly the encoded length or that are out of the 128-bit range, where the other libraries may return a UUID.
+
+These results are checked by tests against fixtures generated with pinned versions of both libraries, see [`scripts/compat`](scripts/compat/README.md).
 
 ### v4.0.0 breaking changes
 
@@ -41,7 +74,7 @@ Examples of supported formats:
 
 Changed bit order and padding behavior to align with other language implementations:
 - Most significant bits are now encoded first
-- Padding characters appear at the end of the string
+- Padding characters are added at the start of the string (leading padding)
 - Compatible with Python's [shortuuid](https://github.com/skorokithakis/shortuuid) v1.0.0+ and Node.js [short-uuid](https://github.com/oculus42/short-uuid)
 
 Before `v3.0.0`
@@ -85,10 +118,12 @@ Add `:shortuuid` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:shortuuid, "~> 4.0"}
+    {:shortuuid, "~> 4.2"}
   ]
 end
 ```
+
+ShortUUID has no runtime dependencies and supports Elixir 1.8 or later.
 
 ## Examples
 
@@ -119,7 +154,27 @@ Starting with version `v4.0.0`, ShortUUID allows you to define custom alphabets 
 ### Restrictions
 
 - The alphabet must contain at least 16 unique characters.
+- The alphabet must not contain more than 256 characters.
 - The alphabet must not contain duplicate characters.
+- No character may be a prefix of another one, e.g. `⭐` and `⭐️` (star + variation selector) cannot be used together.
+- Characters must be in Unicode NFC form and must not become confusable with each other under Unicode normalization (see below).
+
+### Combining characters and Unicode normalization
+
+Characters are split into the alphabet by grapheme, as you see them, but encoded IDs are matched exactly by codepoint.
+This means alphabets may contain characters that merge visually when placed next to each other, such as combining marks, flag letters (regional indicators), emoji modifiers or `\r` and `\n`.
+An ID may then look shorter than its length in alphabet characters.
+
+Some systems (browsers, databases, file systems) apply Unicode normalization, which can change the bytes of such IDs, e.g. turning `e` followed by a combining accent into `é`.
+A normalized ID will then fail to decode. Alphabets that could make a normalized ID decode to a *different* UUID are rejected at compile time.
+If you need IDs to survive arbitrary text processing, stick to ASCII alphabets.
+
+### URL safety
+
+Alphabets are not required to be URL-safe. Any characters are allowed, including emoji, whitespace, control characters and characters that have a special meaning in URLs such as `+`, `/`, `?`, `#` or `%`.
+If you put the encoded IDs into URLs, either pick a URL-safe alphabet or percent-encode them.
+
+All predefined alphabets are URL-safe except `:base64`, which uses `+` and `/`. Use `:base64_url` instead if you need a URL-safe base64 alphabet.
 
 ### Predefined Alphabets
 
