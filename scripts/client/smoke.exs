@@ -38,6 +38,7 @@ end
 
 ClientSmoke.check(ShortUUID.decode("H9cNmGXLEc8NWcZzSThA9s") != {:ok, "550e8400-e29b-41d4-a716-446655440000"}, "case-sensitive IDs")
 ClientSmoke.check(match?({:error, _}, ShortUUID.decode("invalid")), "invalid ID")
+ClientSmoke.check(match?(%{base: 57, encoded_length: 22, canonical: true}, ShortUUID.__shortuuid__()), "__shortuuid__/0")
 
 # Predefined alphabets
 for atom <- [:base32, :base32_crockford, :base32_hex, :base32_z, :base57_shortuuid, :base58, :base62, :base64, :base64_url] do

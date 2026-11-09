@@ -115,6 +115,21 @@ defmodule ShortUUID.BuilderTest do
 
     @merging_modules Enum.map(Map.keys(@merging_alphabets), &Module.concat(__MODULE__, &1))
 
+    property "every decodable string is the canonical encoding of its UUID" do
+      check all(
+              module <- member_of(@merging_modules),
+              %{alphabet: alphabet, encoded_length: length} = module.__shortuuid__(),
+              chars <- list_of(member_of(String.graphemes(alphabet)), length: length)
+            ) do
+        input = Enum.join(chars)
+
+        case module.decode(input) do
+          {:ok, uuid} -> assert module.encode(uuid) == {:ok, input}
+          {:error, _} -> :ok
+        end
+      end
+    end
+
     test "encode and decode the boundary UUIDs" do
       for module <- @merging_modules,
           uuid <- [
@@ -449,6 +464,58 @@ defmodule ShortUUID.BuilderTest do
 
         assert doc =~ "short ID"
       end
+    end
+  end
+
+  describe "__shortuuid__/0" do
+    defmodule MarkerBase58 do
+      use ShortUUID.Builder, alphabet: :base58
+    end
+
+    defmodule MarkerCombining do
+      use ShortUUID.Builder, alphabet: "\u03010123456789abcde"
+    end
+
+    test "describes the module" do
+      assert ShortUUID.__shortuuid__() == %{
+               alphabet: "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz",
+               base: 57,
+               encoded_length: 22,
+               canonical: true
+             }
+
+      assert %{base: 58, encoded_length: 22, canonical: true} = MarkerBase58.__shortuuid__()
+
+      assert MarkerCombining.__shortuuid__() == %{
+               alphabet: "\u03010123456789abcde",
+               base: 16,
+               encoded_length: 32,
+               canonical: true
+             }
+    end
+
+    test "can be detected and matches what encode produces" do
+      for module <- [ShortUUID, MarkerBase58, MarkerCombining] do
+        assert Code.ensure_loaded?(module) and function_exported?(module, :__shortuuid__, 0)
+        %{alphabet: alphabet, encoded_length: length} = module.__shortuuid__()
+        {:ok, encoded} = module.encode("f98e80e7-9923-4173-8408-98f8254912ad")
+        symbols = String.graphemes(alphabet)
+
+        # encoded_length counts alphabet characters, not graphemes
+        assert count_symbols(encoded, symbols) == length
+      end
+    end
+
+    defp count_symbols("", _symbols), do: 0
+
+    defp count_symbols(string, symbols) do
+      symbol = Enum.find(symbols, &String.starts_with?(string, &1))
+
+      1 +
+        count_symbols(
+          binary_part(string, byte_size(symbol), byte_size(string) - byte_size(symbol)),
+          symbols
+        )
     end
   end
 end
