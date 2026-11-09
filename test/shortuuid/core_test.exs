@@ -179,6 +179,37 @@ defmodule ShortUUID.CoreTest do
     end
   end
 
+  describe "build_decode_index/1" do
+    test "rejects empty, duplicate and prefix symbols" do
+      for symbols <- [["", "a"], ["a", "a"], ["ab", "a"], ["a", "ab"]] do
+        assert_raise ArgumentError, ~r/must not be empty or a prefix/, fn ->
+          Core.build_decode_index(symbols)
+        end
+      end
+    end
+
+    test "decoding rejects invalid UTF-8 and input ending inside a symbol" do
+      symbols = ["x\u0301" | String.graphemes("0123456789abcde")]
+      index = Core.build_decode_index(symbols)
+
+      {:ok, encoded} =
+        Core.encode_binary(
+          "ffffffff-ffff-ffff-ffff-ffffffffffff",
+          16,
+          List.to_tuple(symbols),
+          32,
+          hd(symbols)
+        )
+
+      assert {:ok, _} = Core.decode_string(encoded, 16, index, 32)
+
+      assert {:error, "Invalid input"} = Core.decode_string(<<0xFF>> <> encoded, 16, index, 32)
+
+      assert {:error, "Invalid input"} =
+               Core.decode_string(String.duplicate("0", 31) <> "x", 16, index, 32)
+    end
+  end
+
   describe "input guards" do
     test "format_uuid/1 rejects values outside the 128-bit range" do
       assert Core.format_uuid(0) == "00000000-0000-0000-0000-000000000000"
