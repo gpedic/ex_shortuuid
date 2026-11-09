@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v4.3.0 (09.11.2026)
+
+### Added
+* Modules created with `ShortUUID.Builder` define `__shortuuid__/0`, an optional
+  `ShortUUID.Behaviour` callback that returns the alphabet, base, encoded length and
+  `canonical: true`. Libraries such as ecto_shortuuid can use it to skip re-encoding
+  decoded IDs to check them.
+
+### Changed
+* Faster decoding for alphabets made only of ASCII characters, including all
+  predefined alphabets: they decode with a byte lookup table, about 25-30% faster
+  than in 4.2.0. Input with the wrong length is rejected about 2.5x faster. Other
+  alphabets are unchanged.
+
 ## v4.2.0 (09.11.2026)
 
 ### Added
