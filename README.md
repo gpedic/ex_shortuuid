@@ -16,14 +16,35 @@ The default alphabet includes lowercase letters, uppercase letters, and digits, 
 
 Not every alphabet is URL-safe: `:base64` and custom alphabets may contain characters that need escaping in URLs (see [Custom Alphabets](#custom-alphabets)).
 
-**Note:** Different ShortUUID implementations are compatible as long as they use the same alphabet. However, there is no official standard, so if you plan to use ShortUUID with other libraries, it's a good idea to research and test for compatibility.
+**Note:** Different ShortUUID implementations are compatible as long as they use the same alphabet in the same order. There is no official standard, so if you plan to use ShortUUID with other libraries, test for compatibility. See [Compatibility with other implementations](#compatibility-with-other-implementations).
 
 Unlike some other solutions, ShortUUID does not produce UUIDs on its own as there are already plenty of libraries to do so. To generate UUIDs, use libraries such as
 [Elixir UUID](https://github.com/zyro/elixir-uuid), [Erlang UUID](https://github.com/okeuday/uuid) and also [Ecto](https://hexdocs.pm/ecto/Ecto.UUID.html) as it can generate version 4 UUIDs.
 
-ShortUUID supports common UUID formats and is case-insensitive.
+ShortUUID accepts common UUID formats, with or without hyphens and in curly braces, in any letter case, since UUIDs are case-insensitive.
+Encoded short IDs are case-sensitive: `"abc"` and `"ABC"` are different IDs.
 
 ## Compatibility
+
+### Compatibility with other implementations
+
+ShortUUID encodes the most significant bits first and pads with the first alphabet character at the start, like Python's [shortuuid](https://github.com/skorokithakis/shortuuid) and Node.js [short-uuid](https://github.com/oculus42/short-uuid).
+Encoded IDs are interchangeable as long as both sides use the same alphabet in the same order.
+
+Python's `shortuuid` sorts custom alphabets, so only alphabets that are already sorted produce the same IDs.
+A mismatch is silent: the ID decodes to a different, valid UUID instead of failing.
+
+| Alphabet | Python `shortuuid` | Node.js `short-uuid` |
+|---|---|---|
+| `:base57_shortuuid` (default) | yes, default alphabet | yes |
+| `:base58` | yes | yes |
+| `:base62` | yes | yes |
+| `:base32_crockford` | yes | yes |
+| `:base32_hex` | yes | yes |
+| `:base32`, `:base32_z`, `:base64`, `:base64_url` | no, Python sorts them | yes |
+| custom alphabet | only if sorted by codepoint | yes, except characters outside the BMP such as emoji |
+
+ShortUUID is also stricter than both: it rejects IDs that are not exactly the encoded length or that are out of the 128-bit range, where the other libraries may return a UUID.
 
 ### v4.0.0 breaking changes
 
@@ -138,7 +159,7 @@ If you need IDs to survive arbitrary text processing, stick to ASCII alphabets.
 
 ### URL safety
 
-Alphabets are not required to be URL-safe. Any characters are allowed, including emoji and characters that have a special meaning in URLs such as `+`, `/`, `?`, `#` or `%`.
+Alphabets are not required to be URL-safe. Any characters are allowed, including emoji, whitespace, control characters and characters that have a special meaning in URLs such as `+`, `/`, `?`, `#` or `%`.
 If you put the encoded IDs into URLs, either pick a URL-safe alphabet or percent-encode them.
 
 All predefined alphabets are URL-safe except `:base64`, which uses `+` and `/`. Use `:base64_url` instead if you need a URL-safe base64 alphabet.

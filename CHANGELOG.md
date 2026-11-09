@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## v4.2.0 (09.11.2026)
 
 ### Fixed
 * Custom alphabets with characters that merge when concatenated (combining marks,
@@ -17,7 +17,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   another one, a character is not in Unicode NFC form, or Unicode normalization could
   make an encoded ID decode to a different UUID.
 * Faster decoding.
-* Clarified in the docs that alphabets are not required to be URL-safe.
+* Clarified in the docs that alphabets are not required to be URL-safe, that only UUID
+  input is case-insensitive, and which predefined alphabets are compatible with the
+  Python and JavaScript implementations.
+
+## v4.1.0 (08.04.2025)
+
+### Added
+* `ShortUUID.Behaviour` for implementing ShortUUID-compatible modules
+* Modules created with `ShortUUID.Builder` declare `@behaviour ShortUUID.Behaviour`
 
 ## v4.0.0 (25.12.2024)
 
@@ -52,8 +60,6 @@ end
 
 MyCustomUUID.encode(uuid)
 ```
-
-## [Released]
 
 ## v3.0.0 (15.07.2023)
 
