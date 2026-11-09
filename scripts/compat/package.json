@@ -1,0 +1,9 @@
+{
+  "name": "shortuuid-compat",
+  "private": true,
+  "description": "Generates compatibility fixtures with short-uuid (JavaScript)",
+  "type": "module",
+  "dependencies": {
+    "short-uuid": "6.0.3"
+  }
+}

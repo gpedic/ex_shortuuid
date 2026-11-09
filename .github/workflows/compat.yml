@@ -1,0 +1,52 @@
+name: Compatibility fixtures
+
+# Regenerates test/fixtures/compat with the pinned Python and JavaScript
+# implementations and fails if the result differs from the committed fixtures.
+on:
+  schedule:
+    - cron: "17 4 * * 1"
+  pull_request:
+    paths:
+      - "scripts/compat/**"
+      - "test/fixtures/compat/**"
+      - ".github/workflows/compat.yml"
+  push:
+    branches: [master]
+    paths:
+      - "scripts/compat/**"
+      - "test/fixtures/compat/**"
+      - ".github/workflows/compat.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.13"
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+
+      - name: Generate Python fixtures
+        run: |
+          python -m pip install --disable-pip-version-check -r scripts/compat/requirements.txt
+          python -I scripts/compat/python_gen.py
+
+      - name: Generate JavaScript fixtures
+        working-directory: scripts/compat
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          node js_gen.mjs
+
+      - name: Check fixtures are up to date
+        run: git diff --exit-code -- test/fixtures/compat
