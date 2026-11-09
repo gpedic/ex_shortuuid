@@ -69,7 +69,8 @@ defmodule ShortUUID.Mixfile do
     # These are the default files included in the package
     [
       name: :shortuuid,
-      description: "ShortUUID - generate concise, unambiguous, URL-safe UUIDs",
+      description:
+        "ShortUUID - encode UUIDs as concise, unambiguous strings, URL-safe by default, with predefined and custom alphabets",
       files: ["lib", "mix.exs", "README*", "LICENSE*"],
       maintainers: ["Goran Pedić"],
       licenses: ["MIT"],

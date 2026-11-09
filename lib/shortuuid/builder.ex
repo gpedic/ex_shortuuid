@@ -10,7 +10,12 @@ defmodule ShortUUID.Builder do
         use ShortUUID.Builder, alphabet: :base58
       end
 
-  The `alphabet` option must be one of the predefined alphabets or a custom string (16+ unique characters).
+  The `alphabet` option must be one of the predefined alphabets or a custom string
+  of 16 to 256 unique characters.
+
+  Alphabets are not required to be URL-safe. Custom alphabets may contain any characters,
+  including ones with a special meaning in URLs. All predefined alphabets are URL-safe
+  except `:base64`, which uses `+` and `/`; use `:base64_url` if you need URL-safe base64.
 
   ## Predefined Alphabets
 

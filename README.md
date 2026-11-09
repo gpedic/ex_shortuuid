@@ -10,11 +10,13 @@
 
 <!-- MDOC !-->
 
-ShortUUID is a lightweight Elixir library for generating short, unique IDs in URLs. It turns standard UUIDs into smaller strings ideal for use in URLs.
-You can choose from a set of predefined alphabets or define your own. 
-The default alphabet includes lowercase letters, uppercase letters, and digits, omitting characters like 'l', '1', 'I', 'O', and '0' to keep them readable.
+ShortUUID is a lightweight Elixir library that turns standard UUIDs into shorter strings, for example for use in URLs.
+You can choose from a set of predefined alphabets or define your own.
+The default alphabet includes lowercase letters, uppercase letters, and digits, omitting characters like 'l', '1', 'I', 'O', and '0' to keep them readable. It is URL-safe.
 
-**Note:** Different ShortUUID implementations be compatible as long as they use the same alphabet. However, there is no official standard, so if you plan to use ShortUUID with other libraries, it's a good idea to research and test for compatibility.
+Not every alphabet is URL-safe: `:base64` and custom alphabets may contain characters that need escaping in URLs (see [Custom Alphabets](#custom-alphabets)).
+
+**Note:** Different ShortUUID implementations are compatible as long as they use the same alphabet. However, there is no official standard, so if you plan to use ShortUUID with other libraries, it's a good idea to research and test for compatibility.
 
 Unlike some other solutions, ShortUUID does not produce UUIDs on its own as there are already plenty of libraries to do so. To generate UUIDs, use libraries such as
 [Elixir UUID](https://github.com/zyro/elixir-uuid), [Erlang UUID](https://github.com/okeuday/uuid) and also [Ecto](https://hexdocs.pm/ecto/Ecto.UUID.html) as it can generate version 4 UUIDs.
@@ -41,7 +43,7 @@ Examples of supported formats:
 
 Changed bit order and padding behavior to align with other language implementations:
 - Most significant bits are now encoded first
-- Padding characters appear at the end of the string
+- Padding characters are added at the start of the string (leading padding)
 - Compatible with Python's [shortuuid](https://github.com/skorokithakis/shortuuid) v1.0.0+ and Node.js [short-uuid](https://github.com/oculus42/short-uuid)
 
 Before `v3.0.0`
@@ -119,7 +121,15 @@ Starting with version `v4.0.0`, ShortUUID allows you to define custom alphabets 
 ### Restrictions
 
 - The alphabet must contain at least 16 unique characters.
+- The alphabet must not contain more than 256 characters.
 - The alphabet must not contain duplicate characters.
+
+### URL safety
+
+Alphabets are not required to be URL-safe. Any characters are allowed, including emoji and characters that have a special meaning in URLs such as `+`, `/`, `?`, `#` or `%`.
+If you put the encoded IDs into URLs, either pick a URL-safe alphabet or percent-encode them.
+
+All predefined alphabets are URL-safe except `:base64`, which uses `+` and `/`. Use `:base64_url` instead if you need a URL-safe base64 alphabet.
 
 ### Predefined Alphabets
 
