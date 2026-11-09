@@ -71,7 +71,7 @@ defmodule ShortUUID.Mixfile do
       main: "readme",
       source_ref: "v#{@version}",
       source_url: @url,
-      formatters: ["html"]
+      formatters: ["html", "markdown"]
     ]
   end
 
@@ -81,7 +81,7 @@ defmodule ShortUUID.Mixfile do
       name: :shortuuid,
       description:
         "ShortUUID - encode UUIDs as concise, unambiguous strings, URL-safe by default, with predefined and custom alphabets",
-      files: ["lib", "mix.exs", "README*", "LICENSE*", "CHANGELOG*"],
+      files: ["lib", "mix.exs", "README*", "LICENSE*", "CHANGELOG*", "usage-rules.md"],
       maintainers: ["Goran Pedić"],
       licenses: ["MIT"],
       links: %{"GitHub" => @url, "Changelog" => "#{@url}/blob/master/CHANGELOG.md"}
