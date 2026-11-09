@@ -62,7 +62,7 @@ Breaking changes:
 # If you just want to keep using ShortUUID no changes are required
 ShortUUID.encode(uuid)
 
-# New in v4.x you can define use one of a list of predefined alphabets or define your own
+# New in v4.x you can use one of the predefined alphabets or define your own
 defmodule MyUUID do
   use ShortUUID.Builder, alphabet: :base58
 end
@@ -135,6 +135,10 @@ Results are not comparable to previous benchmarks due to them being run on a dif
   encode/1 uuid string with braces         569.16 K        1.76 μs   ±833.41%        1.63 μs        2.17 μs
   decode/1                                   1.00 M      996.37 ns   ±781.87%         918 ns        1376 ns
   ```
+
+## v2.1.2 (2020-04-25)
+
+* fix endless loop when decoding strings whose value does not fit in 128 bits
 
 ## v2.1.1 (2019-02-18)
 
