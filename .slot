@@ -1,0 +1,27 @@
+version = 1
+
+[project]
+name = "ex_shortuuid"
+base_branch = "origin/master"
+github = "gpedic/ex_shortuuid"
+
+[tools]
+erlang = "27.2"
+elixir = "1.18.0-otp-27"
+
+[[cache]]
+path = "deps"
+manifests = ["mix.exs", "mix.lock"]
+
+[[cache]]
+path = "_build"
+optional = true
+manifests = ["mix.exs", "mix.lock", ".tool-versions"]
+invalidate = ["*/lib/shortuuid"]
+
+[[setup]]
+name = "Elixir deps"
+run = "mix deps.get && mix deps.compile"
+
+[session]
+prompt = ["This is an Elixir library with no server or database. Run tests with `mix test`; CI also runs `mix format --check-formatted` and `mix credo --strict`."]
