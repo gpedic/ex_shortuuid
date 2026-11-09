@@ -289,7 +289,7 @@ Inspired by [shortuuid](https://github.com/skorokithakis/shortuuid).
 
 ## Copyright and License
 
-Copyright (c) 2024 Goran Pedić
+Copyright (c) 2017-2026 Goran Pedić
 
 This work is free. You can redistribute it and/or modify it under the
 terms of the MIT License.
