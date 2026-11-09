@@ -237,17 +237,19 @@ This is useful if you want to create your own ShortUUID-compatible module with c
 
 Modules created with `ShortUUID.Builder` also define `__shortuuid__/0`, which returns their alphabet, base, encoded length and `canonical: true`: every UUID has exactly one short ID, and `decode/1` accepts nothing else. Libraries such as ecto_shortuuid can use this to skip re-encoding decoded IDs to check them.
 
-```elixir
-defmodule MyCustomShortUUID do
-  @behaviour ShortUUID.Behaviour
+A common reason to write one by hand is a prefixed ID, like `usr_H9cNmGXLEc8NWcZzSThA9S`, which `ShortUUID.Builder` can't produce. This module wraps `ShortUUID` and adds a fixed prefix:
 
-  @spec encode(String.t()) :: {:ok, String.t()} | {:error, String.t()}
+```elixir
+defmodule MyApp.UserID do
+  @behaviour ShortUUID.Behaviour
+  @prefix "usr_"
+
+  @impl true
   def encode(uuid) do
-    # Your custom implementation here
-    {:ok, "encoded_" <> uuid}
+    with {:ok, short} <- ShortUUID.encode(uuid), do: {:ok, @prefix <> short}
   end
 
-  @spec encode!(String.t()) :: String.t() | no_return()
+  @impl true
   def encode!(uuid) do
     case encode(uuid) do
       {:ok, encoded} -> encoded
@@ -255,17 +257,11 @@ defmodule MyCustomShortUUID do
     end
   end
 
-  @spec decode(String.t()) :: {:ok, String.t()} | {:error, String.t()}
-  def decode(encoded) do
-    # Your custom implementation here
-    if String.starts_with?(encoded, "encoded_") do
-      {:ok, String.replace_prefix(encoded, "encoded_", "")}
-    else
-      {:error, "Invalid format"}
-    end
-  end
+  @impl true
+  def decode(@prefix <> short), do: ShortUUID.decode(short)
+  def decode(_), do: {:error, "Invalid user ID"}
 
-  @spec decode!(String.t()) :: String.t() | no_return()
+  @impl true
   def decode!(encoded) do
     case decode(encoded) do
       {:ok, decoded} -> decoded
@@ -274,6 +270,10 @@ defmodule MyCustomShortUUID do
   end
 end
 ```
+
+It is strict by construction: the prefix is fixed and `ShortUUID.decode/1` accepts only the one short ID for each UUID, so every UUID has exactly one user ID. Anything else, such as another prefix, a missing prefix, a raw UUID after the prefix or a changed letter case, returns `{:error, message}`. Keep that property when you write your own: a `decode/1` that accepts more than `encode/1` produces lets several strings stand for the same ID.
+
+A hand-written module can also define `__shortuuid__/0` with `canonical: true` so libraries like ecto_shortuuid skip their re-encode check. Only do this if `decode/1` really accepts exactly one spelling per UUID, as above; a module that accepts any other input must leave it out.
 
 The `ShortUUID.Behaviour` requires implementing four callbacks:
 - `encode/1` - Encode a UUID into a shorter representation
