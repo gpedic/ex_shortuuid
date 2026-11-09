@@ -285,10 +285,9 @@ defmodule ShortUUID.Builder do
   # Returns the rest of `word` if `prefix` is a proper prefix of it, otherwise nil.
   defp dangling_suffix(prefix, word) do
     size = byte_size(prefix)
+    word_size = byte_size(word)
 
-    case word do
-      <<^prefix::binary-size(^size), rest::binary>> when rest != "" -> rest
-      _ -> nil
-    end
+    if word_size > size and binary_part(word, 0, size) == prefix,
+      do: binary_part(word, size, word_size - size)
   end
 end
