@@ -91,7 +91,144 @@ defmodule ShortUUID.BuilderTest do
     end
   end
 
+  describe "alphabets with characters that merge when concatenated" do
+    # Adjacent symbols in these alphabets render as a single grapheme
+    # (combining marks, regional indicators, CR LF, emoji modifiers, ZWJ,
+    # variation selectors, Hangul jamo). Encoding and decoding must still work.
+    @merging_alphabets %{
+      CombiningMark: "\u0301" <> "0123456789abcde",
+      RegionalIndicator: "🇦0🇧1🇨2🇩3🇪4🇫5🇬6🇭7",
+      CrLf: "\n0123456789ABCD\r",
+      SkinTone: "🏽👋" <> "0123456789abcd",
+      Zwj: "\u200D👩" <> "0123456789abcd",
+      VariationSelector: "\uFE0F⭐" <> "0123456789abcd",
+      HangulJamo: "\u1161\u1100" <> "0123456789abcd"
+    }
+
+    for {name, alphabet} <- @merging_alphabets do
+      Module.create(
+        Module.concat(__MODULE__, name),
+        quote(do: use(ShortUUID.Builder, alphabet: unquote(alphabet))),
+        Macro.Env.location(__ENV__)
+      )
+    end
+
+    @merging_modules Enum.map(Map.keys(@merging_alphabets), &Module.concat(__MODULE__, &1))
+
+    test "encode and decode the boundary UUIDs" do
+      for module <- @merging_modules,
+          uuid <- [
+            "00000000-0000-0000-0000-000000000000",
+            "00000000-0000-0000-0000-000000000001",
+            "ffffffff-ffff-ffff-ffff-ffffffffffff"
+          ] do
+        assert {:ok, encoded} = module.encode(uuid), "#{inspect(module)} failed on #{uuid}"
+        assert {:ok, ^uuid} = module.decode(encoded), "#{inspect(module)} failed on #{uuid}"
+      end
+    end
+
+    @tag property: true
+    test "round-trip every UUID" do
+      check all(uuid <- uuid_generator(), max_runs: 300) do
+        expected = uuid |> String.trim_leading("{") |> String.trim_trailing("}") |> normalize()
+
+        for module <- @merging_modules do
+          assert {:ok, encoded} = module.encode(uuid)
+          assert {:ok, ^expected} = module.decode(encoded)
+        end
+      end
+    end
+
+    @tag property: true
+    test "Unicode normalization never decodes to a different UUID" do
+      check all(uuid <- uuid_generator(), form <- member_of([:nfc, :nfd]), max_runs: 300) do
+        for module <- @merging_modules do
+          {:ok, encoded} = module.encode(uuid)
+          {:ok, expected} = module.decode(encoded)
+
+          case module.decode(String.normalize(encoded, form)) do
+            {:ok, decoded} -> assert decoded == expected
+            {:error, _} -> :ok
+          end
+        end
+      end
+    end
+
+    test "symbols are counted by codepoint, not by grapheme" do
+      module = Module.concat(__MODULE__, CombiningMark)
+      mark = "\u0301"
+      {:ok, encoded} = module.encode("00000000-0000-0000-0000-000000000000")
+
+      # 32 combining marks render as a single grapheme but are 32 symbols
+      assert encoded == String.duplicate(mark, 32)
+      assert String.length(encoded) == 1
+
+      # one symbol too few or too many is rejected
+      assert {:error, _} = module.decode(String.duplicate(mark, 31))
+      assert {:error, _} = module.decode(String.duplicate(mark, 33))
+    end
+
+    defp normalize(uuid) do
+      hex = uuid |> String.replace("-", "") |> String.downcase()
+      <<a::binary-8, b::binary-4, c::binary-4, d::binary-4, e::binary-12>> = hex
+      Enum.join([a, b, c, d, e], "-")
+    end
+  end
+
   describe "validation" do
+    test "rejects alphabets where a character is a prefix of another" do
+      assert_raise ArgumentError, ~r/must not be a prefix of other characters/, fn ->
+        defmodule PrefixAlphabet do
+          use ShortUUID.Builder, alphabet: "⭐⭐\uFE0F0123456789abcd"
+        end
+      end
+    end
+
+    test "rejects characters that are not in NFC form" do
+      # KELVIN SIGN normalizes to "K"
+      assert_raise ArgumentError, ~r/must be in Unicode NFC form/, fn ->
+        defmodule KelvinAlphabet do
+          use ShortUUID.Builder, alphabet: "\u212A0123456789abcde"
+        end
+      end
+
+      # decomposed "é"
+      assert_raise ArgumentError, ~r/must be in Unicode NFC form/, fn ->
+        defmodule DecomposedAlphabet do
+          use ShortUUID.Builder, alphabet: "e\u03010123456789ABCDE"
+        end
+      end
+    end
+
+    test "rejects characters reordered by normalization" do
+      # "x" + acute (combining class 230) followed by dot below (220) is
+      # reordered by NFC/NFD, which would swap two digits.
+      assert_raise ArgumentError, ~r/are reordered by Unicode normalization/, fn ->
+        defmodule ReorderAlphabet do
+          use ShortUUID.Builder, alphabet: "\u0323x\u03010123456789abcd"
+        end
+      end
+    end
+
+    test "rejects characters confusable after normalization" do
+      # "e" followed by a combining acute is canonically equivalent to "é"
+      assert_raise ArgumentError, ~r/can be confused with each other/, fn ->
+        defmodule ConfusableAlphabet do
+          use ShortUUID.Builder, alphabet: "\u0301eé0123456789abc"
+        end
+      end
+    end
+
+    test "accepts accented letters next to their base letters" do
+      defmodule AccentAlphabet do
+        use ShortUUID.Builder, alphabet: "eéèêaàâoô0123456"
+      end
+
+      uuid = "550e8400-e29b-41d4-a716-446655440000"
+      assert {:ok, encoded} = AccentAlphabet.encode(uuid)
+      assert {:ok, ^uuid} = AccentAlphabet.decode(encoded)
+    end
+
     test "rejects invalid alphabets" do
       assert_raise ArgumentError, "Unknown alphabet atom: :not_an_alphabet", fn ->
         defmodule UnknownAlphabet do

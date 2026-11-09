@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Fixed
+* Custom alphabets with characters that merge when concatenated (combining marks,
+  regional indicators, emoji modifiers, ZWJ, CR/LF, Hangul jamo) failed to encode or
+  decode many UUIDs. Encoded strings are now matched by codepoint instead of grapheme.
+
+### Changed
+* Custom alphabets are now rejected at compile time if a character is a prefix of
+  another one, a character is not in Unicode NFC form, or Unicode normalization could
+  make an encoded ID decode to a different UUID.
+* Faster decoding.
+* Clarified in the docs that alphabets are not required to be URL-safe.
+
 ## v4.0.0 (25.12.2024)
 
 Breaking changes:

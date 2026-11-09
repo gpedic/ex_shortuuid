@@ -123,6 +123,18 @@ Starting with version `v4.0.0`, ShortUUID allows you to define custom alphabets 
 - The alphabet must contain at least 16 unique characters.
 - The alphabet must not contain more than 256 characters.
 - The alphabet must not contain duplicate characters.
+- No character may be a prefix of another one, e.g. `⭐` and `⭐️` (star + variation selector) cannot be used together.
+- Characters must be in Unicode NFC form and must not become confusable with each other under Unicode normalization (see below).
+
+### Combining characters and Unicode normalization
+
+Characters are split into the alphabet by grapheme, as you see them, but encoded IDs are matched exactly by codepoint.
+This means alphabets may contain characters that merge visually when placed next to each other, such as combining marks, flag letters (regional indicators), emoji modifiers or `\r` and `\n`.
+An ID may then look shorter than its length in alphabet characters.
+
+Some systems (browsers, databases, file systems) apply Unicode normalization, which can change the bytes of such IDs, e.g. turning `e` followed by a combining accent into `é`.
+A normalized ID will then fail to decode. Alphabets that could make a normalized ID decode to a *different* UUID are rejected at compile time.
+If you need IDs to survive arbitrary text processing, stick to ASCII alphabets.
 
 ### URL safety
 

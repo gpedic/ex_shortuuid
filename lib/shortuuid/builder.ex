@@ -17,6 +17,12 @@ defmodule ShortUUID.Builder do
   including ones with a special meaning in URLs. All predefined alphabets are URL-safe
   except `:base64`, which uses `+` and `/`; use `:base64_url` if you need URL-safe base64.
 
+  The alphabet is split into characters by grapheme, but encoded strings are matched
+  by exact codepoints, so characters that visually merge when concatenated (combining
+  marks, regional indicators, emoji modifiers) are supported. No character may be a
+  prefix of another one, characters must be in Unicode NFC form, and alphabets that
+  could make a Unicode-normalized ID decode to a different UUID are rejected.
+
   ## Predefined Alphabets
 
   The following predefined alphabets are available:
@@ -61,6 +67,8 @@ defmodule ShortUUID.Builder do
     base64_url: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
   }
 
+  import Bitwise
+
   @max_alphabet_length 256
 
   defmacro __using__(opts) do
@@ -68,9 +76,12 @@ defmodule ShortUUID.Builder do
     expanded_alphabet = Macro.expand(alphabet_expr, __CALLER__)
 
     validated_alphabet = validate_alphabet!(expanded_alphabet)
-    base = String.length(validated_alphabet)
-    encoded_length = ceil(:math.log(2 ** 128) / :math.log(base))
-    padding_char = String.first(validated_alphabet)
+    symbols = String.graphemes(validated_alphabet)
+    base = length(symbols)
+    encoded_length = encoded_length(base)
+    padding_char = hd(symbols)
+    alphabet_tuple = List.to_tuple(symbols)
+    decode_index = ShortUUID.Core.build_decode_index(symbols)
 
     quote do
       import Bitwise
@@ -79,9 +90,9 @@ defmodule ShortUUID.Builder do
 
       @alphabet unquote(validated_alphabet)
       @padding_char unquote(padding_char)
-      @alphabet_tuple @alphabet |> String.graphemes() |> List.to_tuple()
-      @codepoint_index @alphabet |> String.graphemes() |> Enum.with_index() |> Map.new()
-      @base String.length(@alphabet)
+      @alphabet_tuple unquote(Macro.escape(alphabet_tuple))
+      @decode_index unquote(Macro.escape(decode_index))
+      @base unquote(base)
       @encoded_length unquote(encoded_length)
 
       @spec encode(String.t()) :: {:ok, String.t()} | {:error, String.t()}
@@ -98,7 +109,7 @@ defmodule ShortUUID.Builder do
 
       @spec decode(String.t()) :: {:ok, String.t()} | {:error, String.t()}
       def decode(string),
-        do: Core.decode_string(string, @base, @codepoint_index, @encoded_length)
+        do: Core.decode_string(string, @base, @decode_index, @encoded_length)
 
       @spec decode!(String.t()) :: String.t() | no_return()
       def decode!(string) do
@@ -134,11 +145,113 @@ defmodule ShortUUID.Builder do
       raise ArgumentError, "Alphabet must not contain duplicate characters"
     end
 
+    validate_prefix_free!(graphemes)
+
+    # ASCII is unaffected by Unicode normalization, so the checks below only
+    # matter for alphabets with non-ASCII characters.
+    unless ascii?(alphabet), do: validate_normalization_safe!(graphemes)
+
     alphabet
   end
 
   defp validate_alphabet!(other) do
     raise ArgumentError,
           "Alphabet must be a literal string or supported atom, got: #{inspect(other)}"
+  end
+
+  # Smallest number of digits in `base` that can represent every 128-bit value.
+  defp encoded_length(base, length \\ 0, capacity \\ 1) do
+    if capacity >= 1 <<< 128,
+      do: length,
+      else: encoded_length(base, length + 1, capacity * base)
+  end
+
+  defp ascii?(string), do: string == for(<<c <- string>>, c < 128, into: "", do: <<c>>)
+
+  # Encoded strings are decoded by matching symbols codepoint by codepoint, which is
+  # only unambiguous if no symbol is a prefix of another one.
+  defp validate_prefix_free!(graphemes) do
+    for a <- graphemes, b <- graphemes, a != b, String.starts_with?(b, a) do
+      raise ArgumentError,
+            "Alphabet characters must not be a prefix of other characters, " <>
+              "got #{inspect(a)} and #{inspect(b)}"
+    end
+
+    :ok
+  end
+
+  # Encoded IDs may pass through systems that apply Unicode normalization (NFC/NFD).
+  # These checks guarantee that a normalized ID either decodes to the original UUID
+  # or fails to decode, but never decodes to a different UUID.
+  defp validate_normalization_safe!(graphemes) do
+    # 1. Each character must be in NFC form, so normalization cannot turn one
+    #    character into another one (e.g. KELVIN SIGN into "K").
+    for g <- graphemes, String.normalize(g, :nfc) != g do
+      raise ArgumentError,
+            "Alphabet characters must be in Unicode NFC form, got #{inspect(g)} " <>
+              "(NFC: #{inspect(String.normalize(g, :nfc))})"
+    end
+
+    # 2. Normalization must not reorder combining marks across character
+    #    boundaries, which could swap two digits without changing the length.
+    nfd = Map.new(graphemes, &{&1, String.normalize(&1, :nfd)})
+
+    for a <- graphemes, b <- graphemes, String.normalize(a <> b, :nfd) != nfd[a] <> nfd[b] do
+      raise ArgumentError,
+            "Alphabet characters #{inspect(a)} and #{inspect(b)} are reordered by " <>
+              "Unicode normalization when placed next to each other"
+    end
+
+    # 3. The decomposed characters must still form a uniquely decodable code, so that
+    #    composing or decomposing characters can never produce another valid ID.
+    unless uniquely_decodable?(Map.values(nfd)) do
+      raise ArgumentError,
+            "Alphabet characters can be confused with each other after Unicode " <>
+              "normalization (NFC/NFD)"
+    end
+
+    :ok
+  end
+
+  # Sardinas-Patterson test for unique decodability of a set of words.
+  defp uniquely_decodable?(words) do
+    word_set = Map.new(words, &{&1, true})
+
+    if map_size(word_set) != length(words) do
+      false
+    else
+      first = for u <- words, v <- words, s = dangling_suffix(u, v), uniq: true, do: s
+      sardinas_patterson(first, words, word_set, %{})
+    end
+  end
+
+  defp sardinas_patterson([], _words, _word_set, _seen), do: true
+
+  defp sardinas_patterson(current, words, word_set, seen) do
+    if Enum.any?(current, &Map.has_key?(word_set, &1)) do
+      false
+    else
+      seen = Enum.into(current, seen, &{&1, true})
+
+      next =
+        for w <- current,
+            u <- words,
+            s <- [dangling_suffix(u, w), dangling_suffix(w, u)],
+            s != nil and not Map.has_key?(seen, s),
+            uniq: true,
+            do: s
+
+      sardinas_patterson(next, words, word_set, seen)
+    end
+  end
+
+  # Returns the rest of `word` if `prefix` is a proper prefix of it, otherwise nil.
+  defp dangling_suffix(prefix, word) do
+    size = byte_size(prefix)
+
+    case word do
+      <<^prefix::binary-size(^size), rest::binary>> when rest != "" -> rest
+      _ -> nil
+    end
   end
 end
