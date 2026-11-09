@@ -45,6 +45,8 @@ defmodule ShortUUID.Builder do
   - `encode!/1` - Encodes a UUID using the specified or default alphabet, raising an error on failure.
   - `decode/1` - Decodes a string into a UUID using the specified or default alphabet.
   - `decode!/1` - Decodes a string into a UUID using the specified or default alphabet, raising an error on failure.
+  - `__shortuuid__/0` - Describes the module: alphabet, base, encoded length and
+    `canonical: true`. See `c:ShortUUID.Behaviour.__shortuuid__/0`.
 
   ## Example
 
@@ -154,6 +156,17 @@ defmodule ShortUUID.Builder do
           {:ok, decoded} -> decoded
           {:error, msg} -> raise ArgumentError, message: msg
         end
+      end
+
+      @impl ShortUUID.Behaviour
+      @spec __shortuuid__() :: ShortUUID.Behaviour.info()
+      def __shortuuid__ do
+        %{
+          alphabet: unquote(validated_alphabet),
+          base: unquote(base),
+          encoded_length: unquote(encoded_length),
+          canonical: true
+        }
       end
     end
   end

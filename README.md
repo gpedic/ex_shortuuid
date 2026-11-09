@@ -235,6 +235,8 @@ iex> SmileyUUID.encode("550e8400-e29b-41d4-a716-446655440000")
 Starting with version `v4.1.0`, ShortUUID provides a behaviour that you can implement to create compatible modules.
 This is useful if you want to create your own ShortUUID-compatible module with custom functionality while maintaining a consistent interface.
 
+Modules created with `ShortUUID.Builder` also define `__shortuuid__/0`, which returns their alphabet, base, encoded length and `canonical: true`: every UUID has exactly one short ID, and `decode/1` accepts nothing else. Libraries such as ecto_shortuuid can use this to skip re-encoding decoded IDs to check them.
+
 ```elixir
 defmodule MyCustomShortUUID do
   @behaviour ShortUUID.Behaviour

@@ -20,6 +20,8 @@ defmodule ShortUUID.Behaviour do
     invalid UTF-8, returns `{:error, message}` instead.
   - `encode!/1` and `decode!/1` return the value directly and raise an
     `ArgumentError` where the non-bang version returns an error.
+  - The optional `c:__shortuuid__/0` describes the encoder. Modules created
+    with `ShortUUID.Builder` define it, with `canonical: true`.
 
   ## Required Callbacks
 
@@ -92,4 +94,32 @@ defmodule ShortUUID.Behaviour do
   - `ArgumentError` - If the input is invalid
   """
   @callback decode!(string :: String.t()) :: String.t() | no_return()
+
+  @typedoc "Encoder description returned by `c:__shortuuid__/0`."
+  @type info :: %{
+          alphabet: String.t(),
+          base: pos_integer(),
+          encoded_length: pos_integer(),
+          canonical: boolean()
+        }
+
+  @doc """
+  Describes the encoder. Optional; modules created with `ShortUUID.Builder`
+  define it.
+
+  - `alphabet` - the alphabet as a single string
+  - `base` - the number of characters in the alphabet
+  - `encoded_length` - the number of alphabet characters in every short ID
+  - `canonical` - `true` if every UUID has exactly one short ID and `decode/1`
+    accepts only those IDs, so encoding a decoded ID always gives back the same
+    ID. Code that re-encodes decoded IDs to reject other spellings can skip that
+    step when this is `true`.
+
+  To check for it, load the module first:
+
+      Code.ensure_loaded?(module) and function_exported?(module, :__shortuuid__, 0)
+  """
+  @callback __shortuuid__() :: info()
+
+  @optional_callbacks __shortuuid__: 0
 end
