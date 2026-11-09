@@ -21,13 +21,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Oldest Elixir the test dependencies support; older client
+          # Every minor release of roughly the last two years; older
           # versions are covered by the client job below
-          - elixir: "1.14"
-            otp: "25"
-          - elixir: "1.15"
-            otp: "26"
           - elixir: "1.17"
+            otp: "26"
+          - elixir: "1.18"
             otp: "27"
           - elixir: "1.19"
             otp: "28"
@@ -90,6 +88,9 @@ jobs:
           - 1.11.4-erlang-24.3.4.9-debian-trixie-20260610-slim
           - 1.12.3-erlang-24.3.4.9-debian-trixie-20260610-slim
           - 1.13.4-erlang-25.3.2.6-debian-trixie-20260610-slim
+          - 1.14.5-erlang-25.3.2.21-debian-trixie-20261104-slim
+          - 1.15.8-erlang-26.2.5.21-debian-trixie-20261104-slim
+          - 1.16.3-erlang-26.2.5.21-debian-trixie-20261104-slim
     env:
       LANG: C.UTF-8
     steps:
