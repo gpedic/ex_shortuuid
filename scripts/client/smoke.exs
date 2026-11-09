@@ -1,7 +1,7 @@
 # Checks that the library compiles and works on the oldest Elixir version we
 # support for clients (`elixir:` in mix.exs). It runs without any dependencies:
 #
-#     MIX_ENV=prod mix run scripts/client/smoke.exs
+#     elixirc -o ebin lib/shortuuid.ex lib/shortuuid/*.ex && elixir -pa ebin scripts/client/smoke.exs
 #
 # The full test suite needs newer Elixir versions (because of its test
 # dependencies), so this script only uses features that work back to the floor.

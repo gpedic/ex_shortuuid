@@ -87,17 +87,14 @@ jobs:
           - 1.12.3-erlang-24.3.4.9-debian-trixie-20260610-slim
           - 1.13.4-erlang-25.3.2.6-debian-trixie-20260610-slim
     env:
-      MIX_ENV: prod
       LANG: C.UTF-8
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Drop the Elixir requirement for the probe
-        run: |
-          sed -i '/elixir: "~>/d' mix.exs
-      - run: mix compile --warnings-as-errors
-      - run: mix run scripts/client/smoke.exs
+      - name: Compile lib/ without Mix or dependencies
+        run: elixirc --warnings-as-errors -o ebin lib/shortuuid.ex lib/shortuuid/*.ex
+      - run: elixir -pa ebin scripts/client/smoke.exs
 
   lint:
     runs-on: ubuntu-24.04
