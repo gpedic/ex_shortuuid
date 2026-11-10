@@ -33,4 +33,12 @@ ShortUUID converts existing UUIDs to short strings and back.
 - To share IDs with Python `shortuuid` or Node.js `short-uuid`, use an alphabet
   marked compatible in the README's compatibility table. A mismatched alphabet
   decodes to the wrong UUID instead of failing.
+- For prefixed IDs like `usr_H9cNmGXLEc8NWcZzSThA9S`, which `ShortUUID.Builder`
+  can't produce, write a module that implements `ShortUUID.Behaviour` and wraps
+  `ShortUUID` (see the README's "Implementing Compatible Modules"). Its `decode/1`
+  must accept exactly what `encode/1` produces: match the fixed prefix and pass
+  the rest to `ShortUUID.decode/1`, never return the input unchecked.
+- Define `__shortuuid__/0` with `canonical: true` in a hand-written module only
+  if every UUID has exactly one accepted ID. Libraries such as ecto_shortuuid
+  trust it and skip their own check.
 - For Ecto schemas, use the `ecto_shortuuid` package instead of converting by hand.
