@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## v4.3.0 (09.11.2026)
+## v4.3.0 (10.11.2026)
 
 ### Added
 * Modules created with `ShortUUID.Builder` define `__shortuuid__/0`, an optional
@@ -18,6 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   predefined alphabets: they decode with a byte lookup table, about 25-30% faster
   than in 4.2.0. Input with the wrong length is rejected about 2.5x faster. Other
   alphabets are unchanged.
+* The README's example of a hand-written `ShortUUID.Behaviour` module is now a
+  prefixed ID (`usr_...`) that wraps `ShortUUID` and accepts only the IDs it
+  produces. The previous example decoded anything after its prefix. A test
+  compiles the example from the README to keep it working.
+* `usage-rules.md` covers prefixed IDs and when a hand-written module may report
+  `canonical: true`.
 
 ## v4.2.0 (09.11.2026)
 
